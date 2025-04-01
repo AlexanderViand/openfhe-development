@@ -54,6 +54,7 @@
 #include "utils/caller_info.h"
 #include "utils/serial.h"
 #include "utils/type_name.h"
+#include "utils/tracing.h"
 
 #include "binfhecontext.h"
 
@@ -260,6 +261,8 @@ protected:
     SCHEME m_schemeId{SCHEME::INVALID_SCHEME};
 
     uint32_t m_keyGenLevel{0};
+
+    IF_TRACE(std::shared_ptr<Tracer<Element>> m_tracer);
 
     /**
    * TypeCheck makes sure that an operation between two ciphertexts is permitted
@@ -1065,7 +1068,7 @@ public:
    * Get a map of automorphism keys for all secret keys
    */
     static std::map<std::string, std::shared_ptr<std::map<usint, EvalKey<Element>>>>& GetAllEvalAutomorphismKeys();
-   /**
+    /**
     * Get automorphism keys for a specific secret key tag
     */
     static std::shared_ptr<std::map<usint, EvalKey<Element>>> GetEvalAutomorphismKeyMapPtr(const std::string& keyID);
@@ -1380,7 +1383,8 @@ public:
    */
     Ciphertext<Element> EvalAdd(ConstCiphertext<Element> ciphertext1, ConstCiphertext<Element> ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
-        return GetScheme()->EvalAdd(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAdd", {ciphertext1, ciphertext2}));
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalAdd(ciphertext1, ciphertext2));
     }
 
     /**
@@ -1391,7 +1395,9 @@ public:
    */
     void EvalAddInPlace(Ciphertext<Element>& ciphertext1, ConstCiphertext<Element> ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAddInPlace", {ciphertext1, ciphertext2}));
         GetScheme()->EvalAddInPlace(ciphertext1, ciphertext2);
+        IF_TRACE(t->registerOutput(ciphertext1));
     }
 
     /**
