@@ -169,6 +169,11 @@ class CryptoContextImpl : public Serializable {
             }
         }
 
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("MakePlaintext");)
+        IF_TRACE(t->registerInput(encoding, "encoding"));
+        IF_TRACE(t->registerInput(value, "value"));
+        IF_TRACE(t->registerInput(depth, "depth"));
+
         // uses a parameter set with a reduced number of RNS limbs corresponding to the level
         std::shared_ptr<ILDCRTParams<DCRTPoly::Integer>> elemParamsPtr;
         if (level != 0) {
@@ -203,6 +208,8 @@ class CryptoContextImpl : public Serializable {
                                                 getSchemeId(), depth, level);
         }
 
+        IF_TRACE(t->registerOutput(p));
+
         return p;
     }
 
@@ -215,7 +222,12 @@ class CryptoContextImpl : public Serializable {
     */
     template <typename Value1>
     static Plaintext MakePlaintext(PlaintextEncodings encoding, CryptoContext<Element> cc, const Value1& value) {
-        return PlaintextFactory::MakePlaintext(value, encoding, cc->GetElementParams(), cc->GetEncodingParams());
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("MakePlaintext");)
+        IF_TRACE(t->registerInput(encoding, "encoding"));
+        IF_TRACE(t->registerInput(cc, "cc"));
+        IF_TRACE(t->registerInput(value, "value"));
+        return REGISTER_IF_TRACE(
+            PlaintextFactory::MakePlaintext(value, encoding, cc->GetElementParams(), cc->GetEncodingParams()));
     }
 
     template <typename Value1, typename Value2>
@@ -1384,7 +1396,7 @@ public:
     Ciphertext<Element> EvalAdd(ConstCiphertext<Element> ciphertext1, ConstCiphertext<Element> ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
         IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAdd", {ciphertext1, ciphertext2}));
-        return REGISTER_IF_TRACE(t, GetScheme()->EvalAdd(ciphertext1, ciphertext2));
+        return REGISTER_IF_TRACE(GetScheme()->EvalAdd(ciphertext1, ciphertext2));
     }
 
     /**
