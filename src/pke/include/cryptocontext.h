@@ -222,7 +222,7 @@ class CryptoContextImpl : public Serializable {
     */
     template <typename Value1>
     static Plaintext MakePlaintext(PlaintextEncodings encoding, CryptoContext<Element> cc, const Value1& value) {
-        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("MakePlaintext");)
+        IF_TRACE(auto t = cc.m_tracer->TraceCryptoContextEvalFunc("MakePlaintext"));
         IF_TRACE(t->registerInput(encoding, "encoding"));
         IF_TRACE(t->registerInput(cc, "cc"));
         IF_TRACE(t->registerInput(value, "value"));
@@ -233,8 +233,14 @@ class CryptoContextImpl : public Serializable {
     template <typename Value1, typename Value2>
     static Plaintext MakePlaintext(PlaintextEncodings encoding, CryptoContext<Element> cc, const Value1& value,
                                    const Value2& value2) {
-        return PlaintextFactory::MakePlaintext(encoding, cc->GetElementParams(), cc->GetEncodingParams(), value,
-                                               value2);
+        IF_TRACE(auto t = cc.m_tracer->TraceCryptoContextEvalFunc("MakePlaintext"));
+        IF_TRACE(t->registerInput(encoding, "encoding"));
+        IF_TRACE(t->registerInput(cc, "cc"));
+        // FIXME: figure out what this template needs to be able to be instantiated with
+        // IF_TRACE(t->registerInput(value, "value"));
+        // IF_TRACE(t->registerInput(value2, "value2"));
+        return REGISTER_IF_TRACE(
+            PlaintextFactory::MakePlaintext(encoding, cc->GetElementParams(), cc->GetEncodingParams(), value, value2));
     }
 
     /**
@@ -531,6 +537,10 @@ public:
         return this->m_schemeId;
     }
 
+    IF_TRACE(void setTracer(std::shared_ptr<Tracer<Element>>&& tracer) { m_tracer = tracer; })
+
+    IF_TRACE(std::shared_ptr<Tracer<Element>> getTracer() const { return m_tracer; })
+
     /**
    * CryptoContextImpl constructor from pointers to parameters and scheme
    * @param params pointer to CryptoParameters
@@ -540,11 +550,13 @@ public:
     // TODO (dsuponit): investigate if we really need 2 constructors for CryptoContextImpl as one of them take regular pointer
     // and the other one takes shared_ptr
     CryptoContextImpl(CryptoParametersBase<Element>* params = nullptr, SchemeBase<Element>* scheme = nullptr,
-                      SCHEME schemeId = SCHEME::INVALID_SCHEME) {
+                      SCHEME schemeId = SCHEME::INVALID_SCHEME, IF_TRACE(Tracer<Element>* tracer = nullptr)) {
         this->params.reset(params);
         this->scheme.reset(scheme);
         this->m_keyGenLevel = 0;
         this->m_schemeId    = schemeId;
+        IF_TRACE(this->m_tracer =
+                     tracer ? std::shared_ptr<Tracer<Element>>(tracer) : std::make_shared<NullTracer<Element>>());
     }
 
     /**
@@ -554,11 +566,13 @@ public:
    * @param schemeId scheme identifier
    */
     CryptoContextImpl(std::shared_ptr<CryptoParametersBase<Element>> params,
-                      std::shared_ptr<SchemeBase<Element>> scheme, SCHEME schemeId = SCHEME::INVALID_SCHEME) {
+                      std::shared_ptr<SchemeBase<Element>> scheme, SCHEME schemeId = SCHEME::INVALID_SCHEME,
+                      IF_TRACE(std::shared_ptr<Tracer<Element>> tracer = nullptr)) {
         this->params        = params;
         this->scheme        = scheme;
         this->m_keyGenLevel = 0;
         this->m_schemeId    = schemeId;
+        IF_TRACE(this->m_tracer = tracer ? tracer : std::make_shared<NullTracer<Element>>());
     }
 
     /**
@@ -570,6 +584,7 @@ public:
         scheme              = c.scheme;
         this->m_keyGenLevel = 0;
         this->m_schemeId    = c.m_schemeId;
+        IF_TRACE(this->m_tracer = c.m_tracer);
     }
 
     /**
@@ -582,6 +597,7 @@ public:
         scheme        = rhs.scheme;
         m_keyGenLevel = rhs.m_keyGenLevel;
         m_schemeId    = rhs.m_schemeId;
+        IF_TRACE(m_tracer = rhs.m_tracer);
         return *this;
     }
 

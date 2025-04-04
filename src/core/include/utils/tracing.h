@@ -16,8 +16,8 @@
 #ifdef ENABLE_TRACER_SUPPORT
     /// The 1-argument version is a special case for CrytpoContext.h where
     /// where there is a convention that the FunctionTracer is always called t
-    #define REGISTER_IF_TRACE_1(x)    t->registerInput(x);
-    #define REGISTER_IF_TRACE_2(t, x) t->registerInput(x);
+    #define REGISTER_IF_TRACE_1(x)    t->registerOutput(x);
+    #define REGISTER_IF_TRACE_2(t, x) t->registerOutput(x);
 #else
     #define REGISTER_IF_TRACE_1(x)    x
     #define REGISTER_IF_TRACE_2(t, x) x
@@ -47,40 +47,35 @@ static_assert(std::is_same<ConstPlaintext, Plaintext>::value, "Expected ConstPla
 /// and different levels of tracing "depth."
 template <typename Element>
 struct FunctionTracer {
-    /// Destructor closes the current trace scope.
-    virtual ~FunctionTracer() = 0;
+    /// Destructor should close the current trace scope.
+    virtual ~FunctionTracer() = default;
 
     // Input Registration Functions. These are expected to not modify their inputs,
     // even when they can for technical reasons (lacking const/const on ptr instead of object).
 
-    virtual void registerInput(Ciphertext<Element> ciphertext, std::string name = "")               = 0;
-    virtual void registerInput(ConstCiphertext<Element> ciphertext, std::string name = "")          = 0;
+    virtual void registerInput(Ciphertext<Element> ciphertext, std::string name = "")       = 0;
+    virtual void registerInput(ConstCiphertext<Element> ciphertext, std::string name = "")  = 0;
     virtual void registerInputs(std::initializer_list<Ciphertext<Element>> ciphertexts,
-                                std::initializer_list<std::string> name = "")                       = 0;
+                                std::initializer_list<std::string> name = {})               = 0;
     virtual void registerInputs(std::initializer_list<ConstCiphertext<Element>> ciphertexts,
-                                std::initializer_list<std::string> name = "")                       = 0;
-    virtual void registerInput(Plaintext plaintext, std::string name = "")                          = 0;
-    virtual void registerInputs(std::initializer_list<Plaintext> plaintexts, std::string name = "") = 0;
-    virtual void registerInput(const PublicKey<Element> publicKey, std::string name = "")           = 0;
-    virtual void registerInput(const PrivateKey<Element> privateKey, std::string name = "")         = 0;
-    virtual void registerInput(const PlaintextEncodings encoding, std::string name = "")            = 0;
-    virtual void registerInput(const std::vector<int64_t>& values, std::string name = "")           = 0;
-    virtual void registerInput(size_t value, std::string name = "")                                 = 0;
+                                std::initializer_list<std::string> name = {})               = 0;
+    virtual void registerInput(Plaintext plaintext, std::string name = "")                  = 0;
+    virtual void registerInputs(std::initializer_list<Plaintext> plaintexts,
+                                std::initializer_list<std::string> name = {})               = 0;
+    virtual void registerInput(const PublicKey<Element> publicKey, std::string name = "")   = 0;
+    virtual void registerInput(const PrivateKey<Element> privateKey, std::string name = "") = 0;
+    virtual void registerInput(const PlaintextEncodings encoding, std::string name = "")    = 0;
+    virtual void registerInput(const std::vector<int64_t>& values, std::string name = "")   = 0;
+    virtual void registerInput(size_t value, std::string name = "")                         = 0;
 
     /// If there are unknown types that should be traced, they should be registered here.
     virtual void registerInput(void* ptr, std::string name = "") = 0;
 
     // Output Registration Functions. These are allowed to modify the output (specifically, it's metadata)
     // but must return their input, since they might be called from a functions'  return statement.
-    virtual Ciphertext<Element> registerOutput(Ciphertext<Element> ciphertext, std::string name = "") {
-        return ciphertext;
-    }
-    virtual ConstCiphertext<Element> registerOutput(ConstCiphertext<Element> ciphertext, std::string name = "") {
-        return ciphertext;
-    }
-    virtual Plaintext registerOutput(Plaintext plaintext, std::string name = "") {
-        return plaintext;
-    }
+    virtual Ciphertext<Element> registerOutput(Ciphertext<Element> ciphertext, std::string name = "")           = 0;
+    virtual ConstCiphertext<Element> registerOutput(ConstCiphertext<Element> ciphertext, std::string name = "") = 0;
+    virtual Plaintext registerOutput(Plaintext plaintext, std::string name = "")                                = 0;
 };
 
 template <typename Element>
@@ -101,15 +96,33 @@ public:
 template <typename Element>
 class NullFunctionTracer : public FunctionTracer<Element> {
 public:
-    NullFunctionTracer() = default;
+    NullFunctionTracer()                   = default;
+    virtual ~NullFunctionTracer() override = default;
 
-    virtual void registerInput(Ciphertext<Element> ciphertext) override {}
-    virtual void registerInput(ConstCiphertext<Element> ciphertext) override {}
-    virtual void registerInputs(std::initializer_list<Ciphertext<Element>> ciphertexts) override {}
-    virtual void registerInputs(std::initializer_list<ConstCiphertext<Element>> ciphertexts) override {}
+    virtual void registerInput(Ciphertext<Element>, std::string) override {}
+    virtual void registerInput(ConstCiphertext<Element>, std::string) override {}
+    virtual void registerInputs(std::initializer_list<Ciphertext<Element>>,
+                                std::initializer_list<std::string>) override {}
+    virtual void registerInputs(std::initializer_list<ConstCiphertext<Element>>,
+                                std::initializer_list<std::string>) override {}
+    virtual void registerInput(Plaintext, std::string) override {}
+    virtual void registerInputs(std::initializer_list<Plaintext>, std::initializer_list<std::string>) override {}
+    virtual void registerInput(const PublicKey<Element>, std::string) override {}
+    virtual void registerInput(const PrivateKey<Element>, std::string) override {}
+    virtual void registerInput(const PlaintextEncodings, std::string) override {}
+    virtual void registerInput(const std::vector<int64_t>&, std::string) override {}
+    virtual void registerInput(size_t, std::string) override {}
+    virtual void registerInput(void*, std::string) override {}
 
-    virtual void registerInput(Plaintext plaintext) override {}
-    virtual void registerInputs(std::initializer_list<Plaintext> plaintexts) override {}
+    virtual Ciphertext<Element> registerOutput(Ciphertext<Element> ciphertext, std::string) override {
+        return ciphertext;
+    }
+    virtual ConstCiphertext<Element> registerOutput(ConstCiphertext<Element> ciphertext, std::string) override {
+        return ciphertext;
+    }
+    virtual Plaintext registerOutput(Plaintext plaintext, std::string) override {
+        return plaintext;
+    }
 };
 
 /// A null tracer that does nothing when called.
@@ -118,7 +131,8 @@ class NullTracer : public Tracer<Element> {
     int level = 0;
 
 public:
-    NullTracer() = default;
+    NullTracer()          = default;
+    virtual ~NullTracer() = default;
 
     virtual std::unique_ptr<FunctionTracer<Element>> TraceCryptoContextEvalFunc(std::string function_name) override {
         return std::make_unique<NullFunctionTracer<Element>>();
