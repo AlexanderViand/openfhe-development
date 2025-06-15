@@ -40,6 +40,13 @@
 #include "math/chebyshev.h"
 #include "schemerns/rns-scheme.h"
 #include "scheme/ckksrns/ckksrns-cryptoparameters.h"
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace lbcrypto {
 
@@ -374,9 +381,10 @@ void CryptoContextImpl<Element>::InsertEvalAutomorphismKey(
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalSum(ConstCiphertext<Element> ciphertext, usint batchSize) const {
     ValidateCiphertext(ciphertext);
-
+    IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSum", {ciphertext}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(batchSize), "batchSize"));
     auto evalSumKeys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ciphertext->GetKeyTag());
-    return GetScheme()->EvalSum(ciphertext, batchSize, evalSumKeys);
+    return REGISTER_IF_TRACE(t, GetScheme()->EvalSum(ciphertext, batchSize, evalSumKeys));
 }
 
 template <typename Element>
@@ -384,8 +392,9 @@ Ciphertext<Element> CryptoContextImpl<Element>::EvalSumRows(ConstCiphertext<Elem
                                                             const std::map<usint, EvalKey<Element>>& evalSumKeys,
                                                             usint subringDim) const {
     ValidateCiphertext(ciphertext);
-
-    return GetScheme()->EvalSumRows(ciphertext, numRows, evalSumKeys, subringDim);
+    IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSumRows", {ciphertext}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(numRows), "numRows"));
+    return REGISTER_IF_TRACE(t, GetScheme()->EvalSumRows(ciphertext, numRows, evalSumKeys, subringDim));
 }
 
 template <typename Element>
@@ -393,32 +402,38 @@ Ciphertext<Element> CryptoContextImpl<Element>::EvalSumCols(
     ConstCiphertext<Element> ciphertext, usint numCols,
     const std::map<usint, EvalKey<Element>>& evalSumKeysRight) const {
     ValidateCiphertext(ciphertext);
-
+    IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSumCols", {ciphertext}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(numCols), "numCols"));
     auto evalSumKeys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ciphertext->GetKeyTag());
-    return GetScheme()->EvalSumCols(ciphertext, numCols, evalSumKeys, evalSumKeysRight);
+    return REGISTER_IF_TRACE(t, GetScheme()->EvalSumCols(ciphertext, numCols, evalSumKeys, evalSumKeysRight));
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalAtIndex(ConstCiphertext<Element> ciphertext, int32_t index) const {
     ValidateCiphertext(ciphertext);
 
+    IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAtIndex", {ciphertext}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(index), "index"));
     // If the index is zero, no rotation is needed, copy the ciphertext and return
     // This is done after the keyMap so that it is protected if there's not a valid key.
     if (0 == index) {
-        return ciphertext->Clone();
+        return REGISTER_IF_TRACE(t, ciphertext->Clone());
     }
 
     auto evalAutomorphismKeys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ciphertext->GetKeyTag());
-    return GetScheme()->EvalAtIndex(ciphertext, index, evalAutomorphismKeys);
+    return REGISTER_IF_TRACE(t, GetScheme()->EvalAtIndex(ciphertext, index, evalAutomorphismKeys));
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalMerge(
     const std::vector<Ciphertext<Element>>& ciphertextVector) const {
     ValidateCiphertext(ciphertextVector[0]);
+    IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalMerge"));
+    for (const auto& ct : ciphertextVector)
+        IF_TRACE(t->registerInput(ct));
 
     auto evalAutomorphismKeys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ciphertextVector[0]->GetKeyTag());
-    return GetScheme()->EvalMerge(ciphertextVector, evalAutomorphismKeys);
+    return REGISTER_IF_TRACE(t, GetScheme()->EvalMerge(ciphertextVector, evalAutomorphismKeys));
 }
 
 template <typename Element>
@@ -428,9 +443,11 @@ Ciphertext<Element> CryptoContextImpl<Element>::EvalInnerProduct(ConstCiphertext
     if (ct2 == nullptr || ct1->GetKeyTag() != ct2->GetKeyTag())
         OPENFHE_THROW("Information was not generated with this crypto context");
 
+    IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalInnerProduct", {ct1, ct2}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(batchSize), "batchSize"));
     auto evalSumKeys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ct1->GetKeyTag());
     auto ek          = CryptoContextImpl<Element>::GetEvalMultKeyVector(ct1->GetKeyTag());
-    return GetScheme()->EvalInnerProduct(ct1, ct2, batchSize, evalSumKeys, ek[0]);
+    return REGISTER_IF_TRACE(t, GetScheme()->EvalInnerProduct(ct1, ct2, batchSize, evalSumKeys, ek[0]));
 }
 
 template <typename Element>
@@ -440,8 +457,11 @@ Ciphertext<Element> CryptoContextImpl<Element>::EvalInnerProduct(ConstCiphertext
     if (ct2 == nullptr)
         OPENFHE_THROW("Information was not generated with this crypto context");
 
+    IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalInnerProduct", {ct1}));
+    IF_TRACE(t->registerInput(ct2));
+    IF_TRACE(t->registerInput(static_cast<size_t>(batchSize), "batchSize"));
     auto evalSumKeys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ct1->GetKeyTag());
-    return GetScheme()->EvalInnerProduct(ct1, ct2, batchSize, evalSumKeys);
+    return REGISTER_IF_TRACE(t, GetScheme()->EvalInnerProduct(ct1, ct2, batchSize, evalSumKeys));
 }
 
 template <typename Element>
