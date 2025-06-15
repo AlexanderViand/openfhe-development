@@ -34,6 +34,11 @@
  */
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
+#include <iostream>
+#include <memory>
+#include <utility>
+#include <vector>
 
 using namespace lbcrypto;
 
@@ -48,6 +53,9 @@ int main() {
     cryptoContext->Enable(PKE);
     cryptoContext->Enable(KEYSWITCH);
     cryptoContext->Enable(LEVELEDSHE);
+
+    auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("simple_integers.trace");
+    cryptoContext->setTracer(std::move(tracer));
 
     // Sample Program: Step 2: Key Generation
 
