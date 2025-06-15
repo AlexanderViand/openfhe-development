@@ -64,6 +64,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 #include <algorithm>
 #include <unordered_map>
 #include <set>
@@ -1243,6 +1244,10 @@ public:
    * @return ciphertext (or null on failure)
    */
     Ciphertext<Element> Encrypt(const Plaintext& plaintext, const PublicKey<Element> publicKey) const {
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("Encrypt"));
+        IF_TRACE(t->registerInput(plaintext));
+        IF_TRACE(t->registerInput(publicKey));
+
         if (plaintext == nullptr)
             OPENFHE_THROW("Input plaintext is nullptr");
         ValidateKey(publicKey);
@@ -1258,7 +1263,7 @@ public:
             ciphertext->SetSlots(plaintext->GetSlots());
         }
 
-        return ciphertext;
+        return REGISTER_IF_TRACE(ciphertext);
     }
 
     /**
@@ -1268,7 +1273,10 @@ public:
    * @return ciphertext (or null on failure)
    */
     Ciphertext<Element> Encrypt(const PublicKey<Element> publicKey, Plaintext plaintext) const {
-        return Encrypt(plaintext, publicKey);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("Encrypt"));
+        IF_TRACE(t->registerInput(publicKey));
+        IF_TRACE(t->registerInput(plaintext));
+        return REGISTER_IF_TRACE(Encrypt(plaintext, publicKey));
     }
 
     /**
@@ -1278,6 +1286,10 @@ public:
    * @return ciphertext (or null on failure)
    */
     Ciphertext<Element> Encrypt(const Plaintext& plaintext, const PrivateKey<Element> privateKey) const {
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("Encrypt"));
+        IF_TRACE(t->registerInput(plaintext));
+        IF_TRACE(t->registerInput(privateKey));
+
         //    if (plaintext == nullptr)
         //      OPENFHE_THROW( "Input plaintext is nullptr");
         ValidateKey(privateKey);
@@ -1293,7 +1305,7 @@ public:
             ciphertext->SetSlots(plaintext->GetSlots());
         }
 
-        return ciphertext;
+        return REGISTER_IF_TRACE(ciphertext);
     }
 
     /**
@@ -1303,7 +1315,10 @@ public:
    * @return ciphertext (or null on failure)
    */
     Ciphertext<Element> Encrypt(const PrivateKey<Element> privateKey, Plaintext plaintext) const {
-        return Encrypt(plaintext, privateKey);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("Encrypt"));
+        IF_TRACE(t->registerInput(privateKey));
+        IF_TRACE(t->registerInput(plaintext));
+        return REGISTER_IF_TRACE(Encrypt(plaintext, privateKey));
     }
 
     /**
