@@ -533,32 +533,43 @@ template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalChebyshevFunction(std::function<double(double)> func,
                                                                       ConstCiphertext<Element> ciphertext, double a,
                                                                       double b, uint32_t degree) const {
+    IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalChebyshevFunction", {ciphertext}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(degree), "degree"));
     std::vector<double> coefficients = EvalChebyshevCoefficients(func, a, b, degree);
-    return EvalChebyshevSeries(ciphertext, coefficients, a, b);
+    auto result = EvalChebyshevSeries(ciphertext, coefficients, a, b);
+    return REGISTER_IF_TRACE(t, result);
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalSin(ConstCiphertext<Element> ciphertext, double a, double b,
                                                         uint32_t degree) const {
-    return EvalChebyshevFunction([](double x) -> double { return std::sin(x); }, ciphertext, a, b, degree);
+    IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSin", {ciphertext}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(degree), "degree"));
+    return REGISTER_IF_TRACE(t, EvalChebyshevFunction([](double x) -> double { return std::sin(x); }, ciphertext, a, b, degree));
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalCos(ConstCiphertext<Element> ciphertext, double a, double b,
                                                         uint32_t degree) const {
-    return EvalChebyshevFunction([](double x) -> double { return std::cos(x); }, ciphertext, a, b, degree);
+    IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalCos", {ciphertext}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(degree), "degree"));
+    return REGISTER_IF_TRACE(t, EvalChebyshevFunction([](double x) -> double { return std::cos(x); }, ciphertext, a, b, degree));
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalLogistic(ConstCiphertext<Element> ciphertext, double a, double b,
                                                              uint32_t degree) const {
-    return EvalChebyshevFunction([](double x) -> double { return 1 / (1 + std::exp(-x)); }, ciphertext, a, b, degree);
+    IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalLogistic", {ciphertext}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(degree), "degree"));
+    return REGISTER_IF_TRACE(t, EvalChebyshevFunction([](double x) -> double { return 1 / (1 + std::exp(-x)); }, ciphertext, a, b, degree));
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalDivide(ConstCiphertext<Element> ciphertext, double a, double b,
                                                            uint32_t degree) const {
-    return EvalChebyshevFunction([](double x) -> double { return 1 / x; }, ciphertext, a, b, degree);
+    IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalDivide", {ciphertext}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(degree), "degree"));
+    return REGISTER_IF_TRACE(t, EvalChebyshevFunction([](double x) -> double { return 1 / x; }, ciphertext, a, b, degree));
 }
 
 }  // namespace lbcrypto

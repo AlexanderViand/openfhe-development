@@ -2624,7 +2624,10 @@ public:
    */
     Ciphertext<Element> EvalLinearWSum(std::vector<ConstCiphertext<Element>>& ciphertextVec,
                                        const std::vector<double>& constantVec) const {
-        return GetScheme()->EvalLinearWSum(ciphertextVec, constantVec);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalLinearWSum"));
+        for (const auto& ct : ciphertextVec)
+            IF_TRACE(t->registerInput(ct));
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalLinearWSum(ciphertextVec, constantVec));
     }
 
     /**
@@ -2637,7 +2640,10 @@ public:
    */
     Ciphertext<Element> EvalLinearWSum(const std::vector<double>& constantsVec,
                                        std::vector<ConstCiphertext<Element>>& ciphertextVec) const {
-        return EvalLinearWSum(ciphertextVec, constantsVec);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalLinearWSum"));
+        for (const auto& ct : ciphertextVec)
+            IF_TRACE(t->registerInput(ct));
+        return REGISTER_IF_TRACE(t, EvalLinearWSum(ciphertextVec, constantsVec));
     }
 
     /**
@@ -2650,7 +2656,12 @@ public:
    */
     Ciphertext<Element> EvalLinearWSumMutable(std::vector<Ciphertext<Element>>& ciphertextVec,
                                               const std::vector<double>& constantsVec) const {
-        return GetScheme()->EvalLinearWSumMutable(ciphertextVec, constantsVec);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalLinearWSumMutable"));
+        for (const auto& ct : ciphertextVec)
+            IF_TRACE(t->registerInput(ct));
+        auto result = GetScheme()->EvalLinearWSumMutable(ciphertextVec, constantsVec);
+        IF_TRACE(t->registerOutput(result));
+        return result;
     }
 
     /**
@@ -2663,7 +2674,11 @@ public:
    */
     Ciphertext<Element> EvalLinearWSumMutable(const std::vector<double>& constantsVec,
                                               std::vector<Ciphertext<Element>>& ciphertextVec) const {
-        return EvalLinearWSumMutable(ciphertextVec, constantsVec);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalLinearWSumMutable"));
+        for (const auto& ct : ciphertextVec)
+            IF_TRACE(t->registerInput(ct));
+        auto result = EvalLinearWSumMutable(ciphertextVec, constantsVec);
+        return REGISTER_IF_TRACE(t, result);
     }
 
     //------------------------------------------------------------------------------
@@ -2683,8 +2698,8 @@ public:
     virtual Ciphertext<Element> EvalPoly(ConstCiphertext<Element> ciphertext,
                                          const std::vector<double>& coefficients) const {
         ValidateCiphertext(ciphertext);
-
-        return GetScheme()->EvalPoly(ciphertext, coefficients);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalPoly", {ciphertext}));
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalPoly(ciphertext, coefficients));
     }
 
     /**
@@ -2700,8 +2715,8 @@ public:
     Ciphertext<Element> EvalPolyLinear(ConstCiphertext<Element> ciphertext,
                                        const std::vector<double>& coefficients) const {
         ValidateCiphertext(ciphertext);
-
-        return GetScheme()->EvalPolyLinear(ciphertext, coefficients);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalPolyLinear", {ciphertext}));
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalPolyLinear(ciphertext, coefficients));
     }
 
     /**
@@ -2715,8 +2730,8 @@ public:
    */
     Ciphertext<Element> EvalPolyPS(ConstCiphertext<Element> ciphertext, const std::vector<double>& coefficients) const {
         ValidateCiphertext(ciphertext);
-
-        return GetScheme()->EvalPolyPS(ciphertext, coefficients);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalPolyPS", {ciphertext}));
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalPolyPS(ciphertext, coefficients));
     }
 
     //------------------------------------------------------------------------------
@@ -2739,8 +2754,8 @@ public:
     Ciphertext<Element> EvalChebyshevSeries(ConstCiphertext<Element> ciphertext,
                                             const std::vector<double>& coefficients, double a, double b) const {
         ValidateCiphertext(ciphertext);
-
-        return GetScheme()->EvalChebyshevSeries(ciphertext, coefficients, a, b);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalChebyshevSeries", {ciphertext}));
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalChebyshevSeries(ciphertext, coefficients, a, b));
     }
 
     /**
@@ -2757,8 +2772,8 @@ public:
     Ciphertext<Element> EvalChebyshevSeriesLinear(ConstCiphertext<Element> ciphertext,
                                                   const std::vector<double>& coefficients, double a, double b) const {
         ValidateCiphertext(ciphertext);
-
-        return GetScheme()->EvalChebyshevSeriesLinear(ciphertext, coefficients, a, b);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalChebyshevSeriesLinear", {ciphertext}));
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalChebyshevSeriesLinear(ciphertext, coefficients, a, b));
     }
 
     /**
@@ -2775,8 +2790,8 @@ public:
     Ciphertext<Element> EvalChebyshevSeriesPS(ConstCiphertext<Element> ciphertext,
                                               const std::vector<double>& coefficients, double a, double b) const {
         ValidateCiphertext(ciphertext);
-
-        return GetScheme()->EvalChebyshevSeriesPS(ciphertext, coefficients, a, b);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalChebyshevSeriesPS", {ciphertext}));
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalChebyshevSeriesPS(ciphertext, coefficients, a, b));
     }
 
     /**
