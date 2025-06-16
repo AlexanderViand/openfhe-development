@@ -413,7 +413,7 @@ Ciphertext<Element> CryptoContextImpl<Element>::EvalAtIndex(ConstCiphertext<Elem
     ValidateCiphertext(ciphertext);
 
     IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAtIndex", {ciphertext}));
-    IF_TRACE(t->registerInput(static_cast<size_t>(index), "index"));
+    IF_TRACE(t->registerInput(static_cast<int64_t>(index), "index"));
     // If the index is zero, no rotation is needed, copy the ciphertext and return
     // This is done after the keyMap so that it is protected if there's not a valid key.
     if (0 == index) {
