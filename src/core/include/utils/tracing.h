@@ -66,8 +66,12 @@ struct FunctionTracer {
     virtual void registerInput(const PrivateKey<Element> privateKey, std::string name = "") = 0;
     virtual void registerInput(const PlaintextEncodings encoding, std::string name = "")    = 0;
     virtual void registerInput(const std::vector<int64_t>& values, std::string name = "")   = 0;
-    virtual void registerInput(int64_t value, std::string name = "")                        = 0;
-    virtual void registerInput(size_t value, std::string name = "")                         = 0;
+    virtual void registerInput(double value, std::string name = "")                         = 0;
+    virtual void registerInput(int32_t value, std::string name = "") {
+        registerInput(static_cast<int64_t>(value), name);
+    }
+    virtual void registerInput(int64_t value, std::string name = "") = 0;
+    virtual void registerInput(size_t value, std::string name = "")  = 0;
 
     /// If there are unknown types that should be traced, they should be registered here.
     virtual void registerInput(void* ptr, std::string name = "") = 0;
@@ -112,6 +116,7 @@ public:
     virtual void registerInput(const PrivateKey<Element>, std::string) override {}
     virtual void registerInput(const PlaintextEncodings, std::string) override {}
     virtual void registerInput(const std::vector<int64_t>&, std::string) override {}
+    virtual void registerInput(double, std::string) override {}
     virtual void registerInput(int64_t, std::string) override {}
     virtual void registerInput(size_t, std::string) override {}
     virtual void registerInput(void*, std::string) override {}

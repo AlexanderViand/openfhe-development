@@ -136,6 +136,11 @@ public:
         ss << "]";
         m_inputs.push_back(ss.str());
     }
+    void registerInput(double value, std::string name = "") override {
+        std::ostringstream ss;
+        ss << (name.empty() ? "double" : name) << "=" << value;
+        m_inputs.push_back(ss.str());
+    }
     void registerInput(int64_t value, std::string name = "") override {
         std::ostringstream ss;
         ss << (name.empty() ? "int" : name) << "=" << value;

@@ -2237,7 +2237,7 @@ public:
     Ciphertext<Element> EvalRotate(ConstCiphertext<Element> ciphertext, int32_t index) const {
         ValidateCiphertext(ciphertext);
         IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalRotate", {ciphertext}));
-        IF_TRACE(t->registerInput(static_cast<int64_t>(index), "index"));
+        IF_TRACE(t->registerInput(index, "index"));
         auto evalKeyMap = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ciphertext->GetKeyTag());
         return REGISTER_IF_TRACE(GetScheme()->EvalAtIndex(ciphertext, index, evalKeyMap));
     }
