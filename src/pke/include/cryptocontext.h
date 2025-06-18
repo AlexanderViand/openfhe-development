@@ -93,20 +93,22 @@ class CryptoContextImpl : public Serializable {
 
     /**
     * @brief Checks if the cryptocontext scheme is CKKS and throws an exception if it is not.
-    * 
+    *
     * @param functionName the calling function name. __func__ can be used instead
     */
     inline void VerifyCKKSScheme(const std::string& functionName) const {
         if (!isCKKS(m_schemeId)) {
-            std::string errMsg = std::string(functionName) + "() is available for the CKKS scheme only."
-                                 " The current scheme is " + convertToString(m_schemeId);
+            std::string errMsg = std::string(functionName) +
+                                 "() is available for the CKKS scheme only."
+                                 " The current scheme is " +
+                                 convertToString(m_schemeId);
             OPENFHE_THROW(errMsg);
         }
     }
 
     /**
     * @brief VerifyCKKSRealDataType Checks if the CKKS data type is real and throws an exception if it is not.
-    * 
+    *
     * @param functionName the calling function name. __func__ can be used instead
     */
     inline void VerifyCKKSRealDataType(const std::string& functionName) const {
@@ -130,7 +132,7 @@ class CryptoContextImpl : public Serializable {
 
     /**
     * @brief Constructs CoefPackedEncoding or PackedEncoding in this context
-    * 
+    *
     * @param encoding encoding type
     * @param value the value to encode
     * @param depth the multiplicative depth to encode the plaintext at
@@ -199,11 +201,11 @@ class CryptoContextImpl : public Serializable {
 
         NativeInteger scf{1};
         bool setNoiseScaleDeg = false;
-        auto scaleTech = cryptoParams->GetScalingTechnique();
+        auto scaleTech        = cryptoParams->GetScalingTechnique();
         if (isBGVRNS(m_schemeId) && (scaleTech == FLEXIBLEAUTO || scaleTech == FLEXIBLEAUTOEXT)) {
             if (scaleTech == FLEXIBLEAUTOEXT && level == 0) {
-                scf = cryptoParams->GetScalingFactorIntBig(level);
-                depth = 1;
+                scf              = cryptoParams->GetScalingFactorIntBig(level);
+                depth            = 1;
                 setNoiseScaleDeg = true;
             }
             else
@@ -221,7 +223,7 @@ class CryptoContextImpl : public Serializable {
 
     /**
     * @brief Constructs CoefPackedEncoding, PackedEncoding in this context
-    * 
+    *
     * @param encoding encoding type
     * @param cc the context to create a plaintext with
     * @param value the value to encode
@@ -252,7 +254,7 @@ class CryptoContextImpl : public Serializable {
 
     /**
     * @brief Gets indices that do not have automorphism keys for the given secret key tag in the key map
-    * 
+    *
     * @param keyTag secret key tag
     * @param indexList array of specific indices to check the key map against
     * @return indices that do not have automorphism keys associated with
@@ -267,7 +269,7 @@ class CryptoContextImpl : public Serializable {
 
     /**
     * @brief Gets automorphism keys for a specific secret key tag and an array of specific indices
-    * 
+    *
     * @param keyTag secret key tag
     * @param indexList array of specific indices to retrieve key for
     * @return shared_ptr to std::map where the map key/data pair is index/automorphism key
@@ -294,7 +296,7 @@ protected:
 
     /**
     * @brief TypeCheck makes sure that an operation between two ciphertexts is permitted
-    * 
+    *
     * @param a ciphertext1
     * @param b ciphertext2
     */
@@ -327,7 +329,7 @@ protected:
 
     /**
     * @brief TypeCheck makes sure that an operation between a ciphertext and a plaintext is permitted
-    * 
+    *
     * @param a ciphertext
     * @param b plaintext
     */
@@ -490,7 +492,7 @@ public:
     /**
     * SetPrivateKey() stores the private key in the crypto context.
     * GetPrivateKey() gets the private key from the crypto context.
-    * 
+    *
     * Thees functions are only intended for debugging and should not be used in production systems.
     * Please define DEBUG_KEY in openfhe.h to enable them.
     *
@@ -531,7 +533,7 @@ public:
 
     /**
     * @brief Constructor from raw pointers to parameters and scheme
-    * 
+    *
     * @param params pointer to CryptoParameters
     * @param scheme pointer to Crypto Scheme object
     * @param schemeId scheme identifier
@@ -550,7 +552,7 @@ public:
 
     /**
     * @brief Constructor from shared pointers to parameters and scheme
-    * 
+    *
     * @param params shared pointer to CryptoParameters
     * @param scheme sharedpointer to Crypto Scheme object
     * @param schemeId scheme identifier
@@ -601,7 +603,7 @@ public:
 
     /**
     * @brief Equality comparison operator
-    * 
+    *
     * @param a cryptocontext object1
     * @param b cryptocontext object2
     * @return true if the implementations have identical params and scheme
@@ -637,7 +639,7 @@ public:
 
     /**
     * @brief Inequality comparison operator
-    * 
+    *
     * @param a cryptocontext object1
     * @param b cryptocontext object2
     * @return true if the implementations do not have identical params and scheme
@@ -676,7 +678,7 @@ public:
 
     /**
     * @brief Serializes all EvalMult keys associated with the given CryptoContext
-    * 
+    *
     * @param ser stream to serialize to
     * @param sertype type of serialization
     * @param cc the CryptoContext whose keys should be serialized
@@ -700,7 +702,7 @@ public:
 
     /**
     * @brief Deserializes EvalMult keys
-    * 
+    *
     * @param ser stream to deserialize from
     * @param sertype type of serialization
     * @return true on success
@@ -739,7 +741,7 @@ public:
 
     /**
     * @brief Adds the given vector of keys for the given keyTag to the map of all EvalMult keys
-    * 
+    *
     * @param evalKeyVec vector of keys
     * @param keyTag secret key tag
     * @attention Silently replaces any existing matching keys and if keyTag is empty, then the key tag is retrieved from evalKeyVec
@@ -761,7 +763,7 @@ public:
 
     /**
     * @brief Serializes all EvalSum keys associated with the given CryptoContext
-    * 
+    *
     * @param ser stream to serialize to
     * @param sertype type of serialization
     * @param cc the CryptoContext whose keys should be serialized
@@ -774,7 +776,7 @@ public:
 
     /**
     * @brief Deserializes EvalSum keys
-    * 
+    *
     * @param ser stream to deserialize from
     * @param sertype type of serialization
     * @return true on success
@@ -804,7 +806,7 @@ public:
 
     /**
     * @brief Adds the given map of keys for the given keyTag to the map of all EvalSum keys
-    * 
+    *
     * @param mapToInsert map of keys
     * @param keyTag secret key tag
     * @attention Silently replaces any existing matching keys and if keyTag is empty, then the key tag is retrieved from mapToInsert
@@ -832,7 +834,7 @@ public:
         }
         else {
             const auto keys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMapPtr(keyTag);
-            omap[keyTag]     = keys;
+            omap[keyTag]    = keys;
             smap            = &omap;
         }
         Serial::Serialize(*smap, ser, sertype);
@@ -841,7 +843,7 @@ public:
 
     /**
     * @brief Serializes all EvalAutomorphism keys associated with the given CryptoContext
-    * 
+    *
     * @param ser stream to serialize to
     * @param sertype type of serialization
     * @param cc the CryptoContext whose keys should be serialized
@@ -865,7 +867,7 @@ public:
 
     /**
     * @brief Serializes EvalAutomorphism keys for an array of specific indices associated with the given keyTag
-    * 
+    *
     * @param ser stream to serialize to
     * @param sertype type of serialization
     * @param keyTag secret key tag
@@ -884,7 +886,7 @@ public:
 
     /**
     * @brief Deserializes EvalAutomorphism keys for an array of specific indices associated with the given keyTag
-    * 
+    *
     * @param ser stream to deserialize from
     * @param sertype type of serialization
     * @param keyTag secret key tag
@@ -926,7 +928,7 @@ public:
 
     /**
     * @brief Deserializes EvalAutomorphism keys
-    * 
+    *
     * @param ser stream to deserialize from
     * @param sertype type of serialization
     * @return true on success
@@ -965,7 +967,7 @@ public:
 
     /**
     * @brief Adds the given map of keys for the given keyTag to the map of all EvalAutomorphism keys
-    * 
+    *
     * @param mapToInsert map of keys
     * @param keyTag secret key tag
     * @attention Silently replaces any existing matching keys and if keyTag is empty, then the key tag is retrieved from mapToInsert
@@ -1117,7 +1119,8 @@ public:
     * @param keyTag secret key tag
     * @return shared_ptr to EvalAutomorphismKey map
     */
-    static std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> GetEvalAutomorphismKeyMapPtr(const std::string& keyTag);
+    static std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> GetEvalAutomorphismKeyMapPtr(
+        const std::string& keyTag);
 
     /**
     * @brief Gets a map of EvalAutomorphism keys for the given keyTag
@@ -1305,10 +1308,7 @@ public:
     * @return Encrypted ciphertext (or null on failure).
     */
     Ciphertext<Element> Encrypt(const PublicKey<Element> publicKey, Plaintext plaintext) const {
-        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("Encrypt"));
-        IF_TRACE(t->registerInput(publicKey));
-        IF_TRACE(t->registerInput(plaintext));
-        return REGISTER_IF_TRACE(Encrypt(plaintext, publicKey));
+        return Encrypt(plaintext, publicKey);
     }
 
     /**
@@ -1349,10 +1349,7 @@ public:
     * @return Encrypted ciphertext (or null on failure).
     */
     Ciphertext<Element> Encrypt(const PrivateKey<Element> privateKey, Plaintext plaintext) const {
-        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("Encrypt"));
-        IF_TRACE(t->registerInput(privateKey));
-        IF_TRACE(t->registerInput(plaintext));
-        return REGISTER_IF_TRACE(Encrypt(plaintext, privateKey));
+        return Encrypt(plaintext, privateKey);
     }
 
     /**
@@ -1461,8 +1458,7 @@ public:
     * @param ciphertext2  Second addend.
     * @return Resulting ciphertext.
     */
-    Ciphertext<Element> EvalAdd(ConstCiphertext<Element>& ciphertext1,
-                                ConstCiphertext<Element>& ciphertext2) const {
+    Ciphertext<Element> EvalAdd(ConstCiphertext<Element>& ciphertext1, ConstCiphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
         IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAdd", {ciphertext1, ciphertext2}));
         return REGISTER_IF_TRACE(GetScheme()->EvalAdd(ciphertext1, ciphertext2));
@@ -1616,7 +1612,8 @@ public:
             IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAdd", {ciphertext}));
             IF_TRACE(t->registerInput(scalar));
             return REGISTER_IF_TRACE(GetScheme()->EvalAdd(ciphertext, scalar));
-        } else {
+        }
+        else {
             IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSub", {ciphertext}));
             IF_TRACE(t->registerInput(-scalar));
             return REGISTER_IF_TRACE(GetScheme()->EvalSub(ciphertext, -scalar));
@@ -1979,7 +1976,7 @@ public:
     /**
     * @brief Creates a vector evalmult keys that can be used with the OpenFHE EvalMult operator
     * @param key secret key
-    * 
+    *
     * @note 1st key (for s^2) is used for multiplication of ciphertexts of depth 1,
     * 2nd key (for s^3) is used for multiplication of ciphertexts of depth 2, etc.
     * A vector of new evaluation keys is stored in crytpocontext
@@ -1993,8 +1990,7 @@ public:
     * @param ciphertext2  Multiplicand.
     * @return Resulting ciphertext (ciphertext1 * ciphertext2).
     */
-    Ciphertext<Element> EvalMult(ConstCiphertext<Element>& ciphertext1,
-                                 ConstCiphertext<Element>& ciphertext2) const {
+    Ciphertext<Element> EvalMult(ConstCiphertext<Element>& ciphertext1, ConstCiphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
         IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalMult", {ciphertext1, ciphertext2}));
 
@@ -2504,8 +2500,8 @@ public:
     * @param digits      Precomputed rotation data (the digit decomposition created by EvalFastRotationPrecompute).
     * @return Rotated ciphertext.
     */
-    Ciphertext<Element> EvalFastRotation(ConstCiphertext<Element>& ciphertext, const uint32_t index,
-                                         const uint32_t m, const std::shared_ptr<std::vector<Element>> digits) const {
+    Ciphertext<Element> EvalFastRotation(ConstCiphertext<Element>& ciphertext, const uint32_t index, const uint32_t m,
+                                         const std::shared_ptr<std::vector<Element>> digits) const {
         return GetScheme()->EvalFastRotation(ciphertext, index, m, digits);
     }
 
@@ -2779,7 +2775,7 @@ public:
     * @return Resulting ciphertext.
     *
     * @note Assumes each multiplication produces a ciphertext within the supported ring size
-    *       (for the secret key degree used by EvalMultsKeyGen). 
+    *       (for the secret key degree used by EvalMultsKeyGen).
     *       Otherwise, it throws an error
     */
     Ciphertext<Element> EvalMultMany(const std::vector<Ciphertext<Element>>& ciphertextVec) const {
@@ -2956,9 +2952,8 @@ public:
     * @param degree      Degree of the Chebyshev approximation.
     * @return Ciphertext after function evaluation.
     */
-    Ciphertext<Element> EvalChebyshevFunction(std::function<double(double)> func,
-                                              ConstCiphertext<Element>& ciphertext, double a, double b,
-                                              uint32_t degree) const;
+    Ciphertext<Element> EvalChebyshevFunction(std::function<double(double)> func, ConstCiphertext<Element>& ciphertext,
+                                              double a, double b, uint32_t degree) const;
 
     /**
     * @brief Evaluates an approximate sine function on a ciphertext using Chebyshev approximation.
@@ -2994,8 +2989,7 @@ public:
     * @param degree      Degree of the Chebyshev approximation.
     * @return Ciphertext after logistic approximation.
     */
-    Ciphertext<Element> EvalLogistic(ConstCiphertext<Element>& ciphertext, double a, double b,
-                                     uint32_t degree) const;
+    Ciphertext<Element> EvalLogistic(ConstCiphertext<Element>& ciphertext, double a, double b, uint32_t degree) const;
 
     /**
     * @brief Evaluates an approximate reciprocal function 1 / x (for x ≥ 1) on a ciphertext using Chebyshev approximation.
@@ -3007,8 +3001,7 @@ public:
     * @param degree      Degree of the Chebyshev approximation.
     * @return Ciphertext after reciprocal approximation.
     */
-    Ciphertext<Element> EvalDivide(ConstCiphertext<Element>& ciphertext, double a, double b,
-                                   uint32_t degree) const;
+    Ciphertext<Element> EvalDivide(ConstCiphertext<Element>& ciphertext, double a, double b, uint32_t degree) const;
 
     //------------------------------------------------------------------------------
     // Advanced SHE EVAL SUM
@@ -3115,8 +3108,8 @@ public:
     * @param batchSize    Number of slots to sum over.
     * @return Ciphertext containing the inner product.
     */
-    Ciphertext<Element> EvalInnerProduct(ConstCiphertext<Element>& ciphertext1,
-                                         ConstCiphertext<Element>& ciphertext2, uint32_t batchSize) const;
+    Ciphertext<Element> EvalInnerProduct(ConstCiphertext<Element>& ciphertext1, ConstCiphertext<Element>& ciphertext2,
+                                         uint32_t batchSize) const;
 
     /**
     * @brief Computes the inner product of a ciphertext and a plaintext using packed encoding and EvalSum.
@@ -3159,7 +3152,7 @@ public:
 
     /**
     * @brief Produces an Eval Key that OpenFHE can use for Proxy Re-Encryption
-    * 
+    *
     * @param oldPrivateKey original secret key
     * @param newPrivateKey new secret key
     * @return new evaluation key
@@ -3474,8 +3467,7 @@ public:
     * @param ciphertext  Input ciphertext.
     * @return Encrypted ciphertext.
     */
-    Ciphertext<Element> IntBootEncrypt(const PublicKey<Element> publicKey,
-                                       ConstCiphertext<Element>& ciphertext) const {
+    Ciphertext<Element> IntBootEncrypt(const PublicKey<Element> publicKey, ConstCiphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
         ValidateKey(publicKey);
         return GetScheme()->IntBootEncrypt(publicKey, ciphertext);
@@ -3489,8 +3481,7 @@ public:
     * @param ciphertext2  Unencrypted masked decryption.
     * @return Refreshed ciphertext.
     */
-    Ciphertext<Element> IntBootAdd(ConstCiphertext<Element>& ciphertext1,
-                                   ConstCiphertext<Element>& ciphertext2) const {
+    Ciphertext<Element> IntBootAdd(ConstCiphertext<Element>& ciphertext1, ConstCiphertext<Element>& ciphertext2) const {
         ValidateCiphertext(ciphertext1);
         ValidateCiphertext(ciphertext2);
         return GetScheme()->IntBootAdd(ciphertext1, ciphertext2);
@@ -3561,8 +3552,7 @@ public:
     */
     Ciphertext<Element> IntMPBootEncrypt(const PublicKey<Element> publicKey,
                                          const std::vector<Ciphertext<Element>>& sharesPair,
-                                         ConstCiphertext<Element>& a,
-                                         ConstCiphertext<Element>& ciphertext) const;
+                                         ConstCiphertext<Element>& a, ConstCiphertext<Element>& ciphertext) const;
 
     /**
     * @brief Performs secret sharing of a secret key for Threshold FHE with aborts.
