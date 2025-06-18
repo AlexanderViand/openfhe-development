@@ -1,3 +1,12 @@
+//==============================================================================
+// BSD 2-Clause License
+//
+// Copyright (c) 2014-2022, NJIT, Duality Technologies Inc. and other contributors
+//
+// All rights reserved.
+//
+// Author TPOC: contact@openfhe.org
+
 #ifndef __SIMPLETRACER_H__
 #define __SIMPLETRACER_H__
 
@@ -20,10 +29,14 @@ class SimpleTracer;
 template <typename Element>
 class SimpleFunctionTracer : public FunctionTracer<Element> {
 public:
-    SimpleFunctionTracer(const std::string& func, std::shared_ptr<std::ostream> out, SimpleTracer<Element>* tracer)
-        : m_func(func), m_out(std::move(out)), m_tracer(tracer) {}
+    SimpleFunctionTracer(const std::string& func, std::shared_ptr<std::ostream> out, SimpleTracer<Element>* tracer,
+                         size_t level)
+        : m_func(func), m_out(std::move(out)), m_tracer(tracer), m_level(level) {}
 
     ~SimpleFunctionTracer() override {
+        for (size_t i = 0; i < m_level; ++i) {
+            (*m_out) << '\t';
+        }
         (*m_out) << m_func;
         if (!m_inputs.empty()) {
             (*m_out) << " inputs=[";
@@ -44,6 +57,7 @@ public:
             (*m_out) << "]";
         }
         (*m_out) << std::endl;
+        m_tracer->EndFunction();
     }
 
     void registerInput(Ciphertext<Element> ciphertext, std::string name = "") override {
@@ -164,30 +178,39 @@ private:
     SimpleTracer<Element>* m_tracer;
     std::vector<std::string> m_inputs;
     std::vector<std::string> m_outputs;
+    size_t m_level;
 };
 
 template <typename Element>
 class SimpleTracer : public Tracer<Element> {
 public:
     explicit SimpleTracer(const std::string& filename = "trace.log")
-        : m_stream(std::make_shared<std::ofstream>(filename, std::ios::app)) {}
-    explicit SimpleTracer(std::shared_ptr<std::ostream> stream) : m_stream(std::move(stream)) {}
+        : m_stream(std::make_shared<std::ofstream>(filename, std::ios::app)), m_level(0) {}
+    explicit SimpleTracer(std::shared_ptr<std::ostream> stream) : m_stream(std::move(stream)), m_level(0) {}
     ~SimpleTracer() override = default;
 
     std::unique_ptr<FunctionTracer<Element>> TraceCryptoContextEvalFunc(std::string func) override {
-        return std::make_unique<SimpleFunctionTracer<Element>>(func, m_stream, this);
+        size_t level = m_level++;
+        return std::make_unique<SimpleFunctionTracer<Element>>(func, m_stream, this, level);
     }
     std::unique_ptr<FunctionTracer<Element>> TraceCryptoContextEvalFunc(
         std::string func, std::initializer_list<Ciphertext<Element>> ciphertexts) override {
-        auto tracer = std::make_unique<SimpleFunctionTracer<Element>>(func, m_stream, this);
+        size_t level = m_level++;
+        auto tracer  = std::make_unique<SimpleFunctionTracer<Element>>(func, m_stream, this, level);
         tracer->registerInputs(ciphertexts);
         return tracer;
     }
     std::unique_ptr<FunctionTracer<Element>> TraceCryptoContextEvalFunc(
         std::string func, std::initializer_list<ConstCiphertext<Element>> ciphertexts) override {
-        auto tracer = std::make_unique<SimpleFunctionTracer<Element>>(func, m_stream, this);
+        size_t level = m_level++;
+        auto tracer  = std::make_unique<SimpleFunctionTracer<Element>>(func, m_stream, this, level);
         tracer->registerInputs(ciphertexts);
         return tracer;
+    }
+
+    void EndFunction() {
+        if (m_level > 0)
+            --m_level;
     }
 
     std::string GetId(const void* ptr, const std::string& type) {
@@ -217,6 +240,7 @@ private:
     std::shared_ptr<std::ostream> m_stream;
     std::unordered_map<const void*, std::string> m_idMap;
     std::unordered_map<std::string, size_t> m_counters;
+    size_t m_level;
 };
 
 }  // namespace lbcrypto
