@@ -38,6 +38,7 @@
 
 #include "ciphertext-fwd.h"
 #include "cryptoobject.h"
+#include "cryptocontext.h"
 #include "utils/tracing.h"
 
 #include "metadata.h"
