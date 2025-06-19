@@ -12,6 +12,7 @@
 #cmakedefine WITH_TCM
 #cmakedefine WITH_OPENMP
 #cmakedefine WITH_NATIVEOPT
+#cmakedefine ENABLE_TRACER_SUPPORT
 
 #cmakedefine CKKS_M_FACTOR @CKKS_M_FACTOR@
 #cmakedefine HAVE_INT128 @HAVE_INT128@
