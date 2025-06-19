@@ -275,8 +275,12 @@ private:
         std::ostringstream ss;
         ss << name << "@" << m_tracer->GetId(ptr, name);
         m_sources.push_back(ss.str());
+        m_sourcePtrs.push_back(ptr);
     }
     void addDest(const std::string& name, const void* ptr) {
+        if (m_sourcePtrs.size() == 1) {
+            m_tracer->Alias(ptr, m_sourcePtrs.front(), name);
+        }
         std::ostringstream ss;
         ss << name << "@" << m_tracer->GetId(ptr, name);
         m_dests.push_back(ss.str());
@@ -285,6 +289,7 @@ private:
     std::string m_label;
     OStreamPtr m_out;
     SimpleTracer<Element>* m_tracer;
+    std::vector<const void*> m_sourcePtrs;
     std::vector<std::string> m_sources;
     std::vector<std::string> m_dests;
     size_t m_level;
@@ -338,6 +343,11 @@ public:
         std::string value  = prefix + std::to_string(id);
         m_idMap[ptr]       = value;
         return value;
+    }
+
+    void Alias(const void* dest, const void* src, const std::string& type) {
+        std::string id = GetId(src, type);
+        m_idMap[dest]  = id;
     }
 
     static std::string typePrefix(const std::string& type) {
