@@ -1,7 +1,40 @@
 #ifndef __TRACING_H__
 #define __TRACING_H__
+// ===========================================================================
+// BSD 2-Clause License
+//
+// Copyright (c) 2014-2022, NJIT, Duality Technologies Inc. and other contributors
+//
+// All rights reserved.
+//
+// Author TPOC: contact@openfhe.org
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// ===========================================================================
 
 #include "config_core.h"
+#include <memory>
+#include <string>
+#include <vector>
 
 #ifdef ENABLE_TRACER_SUPPORT
     // This is intentionally not using "do {x} while(0)"
@@ -39,6 +72,19 @@
     #include "key/privatekey-fwd.h"
 
 namespace lbcrypto {
+
+/// Utility to create a shared_ptr wrapper around an existing object pointer
+/// without taking ownership. Used for tracing objects that are not managed by
+/// a shared_ptr.
+template <typename T, typename D = void>
+inline std::shared_ptr<T> TraceShared(T* ptr) {
+    return std::shared_ptr<T>(ptr, [](T*) {});
+}
+
+template <typename T>
+inline std::shared_ptr<const T> TraceShared(const T* ptr) {
+    return std::shared_ptr<const T>(ptr, [](const T*) {});
+}
 
 /// Tracking for data movements
 template <typename Element>

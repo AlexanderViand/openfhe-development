@@ -76,7 +76,7 @@ public:
         : CryptoObject<Element>(cc, id), encodingType(encType) {
         IF_TRACE(if (cc) {
             auto dt = cc->getTracer()->TraceDataUpdate("ciphertext_ctor");
-            dt->registerDestination(*this);
+            dt->registerDestination(TraceShared(this));
         })
     }
 
@@ -103,8 +103,8 @@ public:
         m_metadataMap      = ciphertext.m_metadataMap;
         IF_TRACE(if (ciphertext.GetCryptoContext()) {
             auto dt = ciphertext.GetCryptoContext()->getTracer()->TraceDataUpdate("ciphertext_copy");
-            dt->registerSource(ciphertext);
-            dt->registerDestination(*this);
+            dt->registerSource(TraceShared(&ciphertext));
+            dt->registerDestination(TraceShared(this));
         })
     }
 
@@ -121,7 +121,7 @@ public:
         IF_TRACE(if (ciphertext && ciphertext->GetCryptoContext()) {
             auto dt = ciphertext->GetCryptoContext()->getTracer()->TraceDataUpdate("ciphertext_copy");
             dt->registerSource(ciphertext);
-            dt->registerDestination(*this);
+            dt->registerDestination(TraceShared(this));
         })
     }
 
@@ -140,8 +140,8 @@ public:
         m_metadataMap      = std::move(ciphertext.m_metadataMap);
         IF_TRACE(if (ciphertext.GetCryptoContext()) {
             auto dt = ciphertext.GetCryptoContext()->getTracer()->TraceDataUpdate("ciphertext_move");
-            dt->registerSource(ciphertext);
-            dt->registerDestination(*this);
+            dt->registerSource(TraceShared(&ciphertext));
+            dt->registerDestination(TraceShared(this));
         })
     }
 
@@ -158,7 +158,7 @@ public:
         IF_TRACE(if (ciphertext && ciphertext->GetCryptoContext()) {
             auto dt = ciphertext->GetCryptoContext()->getTracer()->TraceDataUpdate("ciphertext_move");
             dt->registerSource(ciphertext);
-            dt->registerDestination(*this);
+            dt->registerDestination(TraceShared(this));
         })
     }
 
@@ -220,8 +220,8 @@ public:
             this->m_metadataMap      = rhs.m_metadataMap;
             IF_TRACE(if (rhs.GetCryptoContext()) {
                 auto dt = rhs.GetCryptoContext()->getTracer()->TraceDataUpdate("ciphertext_assign");
-                dt->registerSource(rhs);
-                dt->registerDestination(*this);
+                dt->registerSource(TraceShared(&rhs));
+                dt->registerDestination(TraceShared(this));
             })
         }
 
@@ -248,8 +248,8 @@ public:
             this->m_metadataMap      = std::move(rhs.m_metadataMap);
             IF_TRACE(if (rhs.GetCryptoContext()) {
                 auto dt = rhs.GetCryptoContext()->getTracer()->TraceDataUpdate("ciphertext_move_assign");
-                dt->registerSource(rhs);
-                dt->registerDestination(*this);
+                dt->registerSource(TraceShared(&rhs));
+                dt->registerDestination(TraceShared(this));
             })
         }
 
