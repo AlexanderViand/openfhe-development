@@ -74,9 +74,10 @@ public:
     explicit CiphertextImpl(CryptoContext<Element> cc, const std::string& id = "",
                             PlaintextEncodings encType = INVALID_ENCODING)
         : CryptoObject<Element>(cc, id), encodingType(encType) {
-        // FIXME: why is this producing weird template errors?
-        // IF_TRACE(auto t = cc->getTracer());
-        // IF_TRACE(t->registerDestination(*this));
+        IF_TRACE(if (cc) {
+            auto dt = cc->getTracer()->TraceDataUpdate("ciphertext_ctor");
+            dt->registerDestination(*this);
+        })
     }
 
     /**
@@ -100,6 +101,11 @@ public:
         encodingType       = ciphertext.encodingType;
         m_slots            = ciphertext.m_slots;
         m_metadataMap      = ciphertext.m_metadataMap;
+        IF_TRACE(if (ciphertext.GetCryptoContext()) {
+            auto dt = ciphertext.GetCryptoContext()->getTracer()->TraceDataUpdate("ciphertext_copy");
+            dt->registerSource(ciphertext);
+            dt->registerDestination(*this);
+        })
     }
 
     explicit CiphertextImpl(Ciphertext<Element> ciphertext) : CryptoObject<Element>(*ciphertext) {
@@ -112,6 +118,11 @@ public:
         encodingType       = ciphertext->encodingType;
         m_slots            = ciphertext->m_slots;
         m_metadataMap      = ciphertext->m_metadataMap;
+        IF_TRACE(if (ciphertext && ciphertext->GetCryptoContext()) {
+            auto dt = ciphertext->GetCryptoContext()->getTracer()->TraceDataUpdate("ciphertext_copy");
+            dt->registerSource(ciphertext);
+            dt->registerDestination(*this);
+        })
     }
 
     /**
@@ -127,6 +138,11 @@ public:
         encodingType       = std::move(ciphertext.encodingType);
         m_slots            = std::move(ciphertext.m_slots);
         m_metadataMap      = std::move(ciphertext.m_metadataMap);
+        IF_TRACE(if (ciphertext.GetCryptoContext()) {
+            auto dt = ciphertext.GetCryptoContext()->getTracer()->TraceDataUpdate("ciphertext_move");
+            dt->registerSource(ciphertext);
+            dt->registerDestination(*this);
+        })
     }
 
     explicit CiphertextImpl(Ciphertext<Element>&& ciphertext) : CryptoObject<Element>(*ciphertext) {
@@ -139,6 +155,11 @@ public:
         encodingType       = std::move(ciphertext->encodingType);
         m_slots            = std::move(ciphertext->m_slots);
         m_metadataMap      = std::move(ciphertext->m_metadataMap);
+        IF_TRACE(if (ciphertext && ciphertext->GetCryptoContext()) {
+            auto dt = ciphertext->GetCryptoContext()->getTracer()->TraceDataUpdate("ciphertext_move");
+            dt->registerSource(ciphertext);
+            dt->registerDestination(*this);
+        })
     }
 
     /**
@@ -197,6 +218,11 @@ public:
             this->encodingType       = rhs.encodingType;
             this->m_slots            = rhs.m_slots;
             this->m_metadataMap      = rhs.m_metadataMap;
+            IF_TRACE(if (rhs.GetCryptoContext()) {
+                auto dt = rhs.GetCryptoContext()->getTracer()->TraceDataUpdate("ciphertext_assign");
+                dt->registerSource(rhs);
+                dt->registerDestination(*this);
+            })
         }
 
         return *this;
@@ -220,6 +246,11 @@ public:
             this->encodingType       = std::move(rhs.encodingType);
             this->m_slots            = std::move(rhs.m_slots);
             this->m_metadataMap      = std::move(rhs.m_metadataMap);
+            IF_TRACE(if (rhs.GetCryptoContext()) {
+                auto dt = rhs.GetCryptoContext()->getTracer()->TraceDataUpdate("ciphertext_move_assign");
+                dt->registerSource(rhs);
+                dt->registerDestination(*this);
+            })
         }
 
         return *this;

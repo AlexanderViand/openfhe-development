@@ -1,5 +1,35 @@
 #ifndef __SIMPLETRACER_H__
 #define __SIMPLETRACER_H__
+// ==============================================================================
+// BSD 2-Clause License
+//
+// Copyright (c) 2014-2022, NJIT, Duality Technologies Inc. and other contributors
+//
+// All rights reserved.
+//
+// Author TPOC: contact@openfhe.org
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// ==============================================================================
 
 // Defines ENABLE_TRACER_SUPPORT (via config_core.h) so needs to be outside the #ifdef ENABLE_TRACER_SUPPORT
 #include "tracing.h"
@@ -173,6 +203,94 @@ private:
 };
 
 template <typename Element>
+class SimpleDataTracer : public DataTracer<Element> {
+public:
+    SimpleDataTracer(std::string label, OStreamPtr out, SimpleTracer<Element>* tracer, size_t level)
+        : m_label(std::move(label)), m_out(std::move(out)), m_tracer(tracer), m_level(level) {}
+
+    ~SimpleDataTracer() override {
+        for (size_t i = 0; i < m_level; ++i) {
+            (*m_out) << '\t';
+        }
+        (*m_out) << m_label;
+        printList(m_sources, "sources");
+        printList(m_dests, "dests");
+        (*m_out) << std::endl;
+    }
+
+    void registerSource(Ciphertext<Element> ciphertext, std::string name = "") override {
+        addSource(name.empty() ? "ciphertext" : name, ciphertext.get());
+    }
+    void registerSource(ConstCiphertext<Element> ciphertext, std::string name = "") override {
+        addSource(name.empty() ? "constciphertext" : name, ciphertext.get());
+    }
+    void registerSource(Plaintext plaintext, std::string name = "") override {
+        addSource(name.empty() ? "plaintext" : name, plaintext.get());
+    }
+    void registerSource(ConstPlaintext plaintext, std::string name = "") override {
+        addSource(name.empty() ? "plaintext" : name, plaintext.get());
+    }
+    void registerSource(const PublicKey<Element> key, std::string name = "") override {
+        addSource(name.empty() ? "publickey" : name, key.get());
+    }
+    void registerSource(const PrivateKey<Element> key, std::string name = "") override {
+        addSource(name.empty() ? "privatekey" : name, key.get());
+    }
+
+    void registerDestination(Ciphertext<Element> ciphertext, std::string name = "") override {
+        addDest(name.empty() ? "ciphertext" : name, ciphertext.get());
+    }
+    void registerDestination(ConstCiphertext<Element> ciphertext, std::string name = "") override {
+        addDest(name.empty() ? "constciphertext" : name, ciphertext.get());
+    }
+    void registerDestination(Plaintext plaintext, std::string name = "") override {
+        addDest(name.empty() ? "plaintext" : name, plaintext.get());
+    }
+    void registerDestination(ConstPlaintext plaintext, std::string name = "") override {
+        addDest(name.empty() ? "plaintext" : name, plaintext.get());
+    }
+    void registerDestination(const PublicKey<Element> key, std::string name = "") override {
+        addDest(name.empty() ? "publickey" : name, key.get());
+    }
+    void registerDestination(const PrivateKey<Element> key, std::string name = "") override {
+        addDest(name.empty() ? "privatekey" : name, key.get());
+    }
+
+private:
+    void printList(const std::vector<std::string>& list, const std::string& label) const {
+        if (list.empty()) {
+            return;
+        }
+        (*m_out) << ' ' << label << "=[";
+        for (size_t i = 0; i < list.size(); ++i) {
+            if (i > 0) {
+                (*m_out) << ", ";
+            }
+            (*m_out) << list[i];
+        }
+        (*m_out) << ']';
+    }
+
+    void addSource(const std::string& name, const void* ptr) {
+        std::ostringstream ss;
+        ss << name << "@" << m_tracer->GetId(ptr, name);
+        m_sources.push_back(ss.str());
+    }
+    void addDest(const std::string& name, const void* ptr) {
+        std::ostringstream ss;
+        ss << name << "@" << m_tracer->GetId(ptr, name);
+        m_dests.push_back(ss.str());
+    }
+
+    std::string m_label;
+    OStreamPtr m_out;
+    SimpleTracer<Element>* m_tracer;
+    std::vector<std::string> m_sources;
+    std::vector<std::string> m_dests;
+    size_t m_level;
+};
+
+template <typename Element>
 class SimpleTracer : public Tracer<Element> {
 public:
     explicit SimpleTracer(const std::string& filename = "trace.log")
@@ -199,8 +317,9 @@ public:
         return tracer;
     }
 
-    virtual std::unique_ptr<DataTracer<Element>> TraceDataUpdate(std::string function_name) override {
-        return std::make_unique<NullDataTracer<Element>>();
+    std::unique_ptr<DataTracer<Element>> TraceDataUpdate(std::string function_name) override {
+        size_t level = m_level;
+        return std::make_unique<SimpleDataTracer<Element>>(function_name, m_stream, this, level);
     }
 
     void EndFunction() {
