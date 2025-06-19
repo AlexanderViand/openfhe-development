@@ -38,6 +38,7 @@
 
 #include "ciphertext-fwd.h"
 #include "cryptoobject.h"
+#include "utils/tracing.h"
 
 #include "metadata.h"
 #include "key/key.h"
@@ -72,7 +73,11 @@ public:
    */
     explicit CiphertextImpl(CryptoContext<Element> cc, const std::string& id = "",
                             PlaintextEncodings encType = INVALID_ENCODING)
-        : CryptoObject<Element>(cc, id), encodingType(encType) {}
+        : CryptoObject<Element>(cc, id), encodingType(encType) {
+        // FIXME: why is this producing weird template errors?
+        // IF_TRACE(auto t = cc->getTracer());
+        // IF_TRACE(t->registerDestination(*this));
+    }
 
     /**
    * Construct a new ciphertext from the parameters of a given public key
