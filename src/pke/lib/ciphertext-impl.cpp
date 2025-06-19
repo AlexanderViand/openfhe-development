@@ -30,6 +30,7 @@
 //==================================================================================
 
 #include "ciphertext.h"
+#include "cryptocontext.h"
 
 namespace lbcrypto {
 
