@@ -32,6 +32,11 @@ on:
         description: 'MATHBACKEND6 jobs'
         type: string
         required: true
+      enable_tracer:
+        description: 'Enable tracer instrumentation (ON/OFF)'
+        type: string
+        required: true
+        default: 'OFF'
       cmake_args_map:
         description: 'Cmake args by job name (json string)'
         type: string
@@ -55,6 +60,7 @@ jobs:
           echo "mb2_jobs       : ${{ inputs.mb2_jobs }}"
           echo "mb4_jobs       : ${{ inputs.mb4_jobs }}"
           echo "mb6_jobs       : ${{ inputs.mb6_jobs }}"
+          echo "enable_tracer  : ${{ inputs.enable_tracer }}"
           echo "cmake_args_map : ${{ inputs.cmake_args_map }}"
           echo "==================================================="
 
@@ -140,13 +146,13 @@ jobs:
       run: |
         echo "runs-on:     ${{ inputs.runner }}"
         echo "module_name: ${{ github.job }}"
-        echo "cmake_args:  ${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }}"
+        echo "cmake_args:  ${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }} -DENABLE_TRACER_SUPPORT=${{ inputs.enable_tracer }}"
 
     - name: ${{ github.job }}
       uses: openfheorg/openfhe-development/.github/actions/generic_workflow_builder@github-ci
       with:
         module_name: ${{ github.job }}
-        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }}"
+        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }} -DENABLE_TRACER_SUPPORT=${{ inputs.enable_tracer }}"
 
 
   ###############################################
@@ -172,7 +178,7 @@ jobs:
       uses: openfheorg/openfhe-development/.github/actions/generic_workflow_builder@github-ci
       with:
         module_name: ${{ github.job }}
-        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }}"
+        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }} -DENABLE_TRACER_SUPPORT=${{ inputs.enable_tracer }}"
 
 
   ###############################################
@@ -198,7 +204,7 @@ jobs:
       uses: openfheorg/openfhe-development/.github/actions/generic_workflow_builder@github-ci
       with:
         module_name: ${{ github.job }}
-        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }}  ${{ needs.init.outputs.openmp_flag }}"
+        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }}  ${{ needs.init.outputs.openmp_flag }} -DENABLE_TRACER_SUPPORT=${{ inputs.enable_tracer }}"
 
 
   ###############################################
@@ -224,7 +230,7 @@ jobs:
       uses: openfheorg/openfhe-development/.github/actions/generic_workflow_builder@github-ci
       with:
         module_name: ${{ github.job }}
-        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }}"
+        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }} -DENABLE_TRACER_SUPPORT=${{ inputs.enable_tracer }}"
 
 
   ###############################################
@@ -250,7 +256,7 @@ jobs:
       uses: openfheorg/openfhe-development/.github/actions/generic_workflow_builder@github-ci
       with:
         module_name: ${{ github.job }}
-        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }}"
+        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }} -DENABLE_TRACER_SUPPORT=${{ inputs.enable_tracer }}"
 
 
   ###############################################
@@ -276,7 +282,7 @@ jobs:
       uses: openfheorg/openfhe-development/.github/actions/generic_workflow_builder@github-ci
       with:
         module_name: ${{ github.job }}
-        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }}"
+        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }} -DENABLE_TRACER_SUPPORT=${{ inputs.enable_tracer }}"
 
 
   ###############################################
@@ -302,7 +308,7 @@ jobs:
       uses: openfheorg/openfhe-development/.github/actions/generic_workflow_builder@github-ci
       with:
         module_name: ${{ github.job }}
-        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }}"
+        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }} -DENABLE_TRACER_SUPPORT=${{ inputs.enable_tracer }}"
 
 
   ###############################################
@@ -328,7 +334,7 @@ jobs:
       uses: openfheorg/openfhe-development/.github/actions/generic_workflow_builder@github-ci
       with:
         module_name: ${{ github.job }}
-        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }}"
+        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }} -DENABLE_TRACER_SUPPORT=${{ inputs.enable_tracer }}"
 
 
   ###############################################
@@ -354,7 +360,7 @@ jobs:
       uses: openfheorg/openfhe-development/.github/actions/generic_workflow_builder@github-ci
       with:
         module_name: ${{ github.job }}
-        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }}"
+        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }} -DENABLE_TRACER_SUPPORT=${{ inputs.enable_tracer }}"
 
 
   ###############################################
@@ -380,4 +386,4 @@ jobs:
       uses: openfheorg/openfhe-development/.github/actions/generic_workflow_builder@github-ci
       with:
         module_name: ${{ github.job }}
-        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }}"
+        cmake_args: "${{ needs.init.outputs.compiler }} ${{ fromJson(inputs.cmake_args_map)[github.job] }} -DNATIVE_SIZE=${{ matrix.integer_size }} ${{ needs.init.outputs.openmp_flag }} -DENABLE_TRACER_SUPPORT=${{ inputs.enable_tracer }}"
