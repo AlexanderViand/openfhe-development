@@ -1,6 +1,37 @@
 #ifndef __SIMPLETRACER_H__
 #define __SIMPLETRACER_H__
 
+//==============================================================================
+// BSD 2-Clause License
+//
+// Copyright (c) 2014-2022, NJIT, Duality Technologies Inc. and other contributors
+//
+// All rights reserved.
+//
+// Author TPOC: contact@openfhe.org
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this
+//    list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//==============================================================================
+
 #ifdef ENABLE_TRACER_SUPPORT
 
     #include "tracing.h"
@@ -8,20 +39,21 @@
     #include <memory>
     #include <sstream>
     #include <string>
+    #include <unordered_map>
     #include <utility>
     #include <vector>
-    #include <unordered_map>
 
 namespace lbcrypto {
 
 template <typename Element>
 class SimpleTracer;
 
+using OStreamPtr = std::shared_ptr<std::ostream>;
+
 template <typename Element>
 class SimpleFunctionTracer : public FunctionTracer<Element> {
 public:
-    SimpleFunctionTracer(const std::string& func, std::shared_ptr<std::ostream> out, SimpleTracer<Element>* tracer,
-                         size_t level)
+    SimpleFunctionTracer(const std::string& func, OStreamPtr out, SimpleTracer<Element>* tracer, size_t level)
         : m_func(func), m_out(std::move(out)), m_tracer(tracer), m_level(level) {}
 
     ~SimpleFunctionTracer() override {
@@ -29,24 +61,8 @@ public:
             (*m_out) << '\t';
         }
         (*m_out) << m_func;
-        if (!m_inputs.empty()) {
-            (*m_out) << " inputs=[";
-            for (size_t i = 0; i < m_inputs.size(); ++i) {
-                if (i > 0)
-                    (*m_out) << ", ";
-                (*m_out) << m_inputs[i];
-            }
-            (*m_out) << "]";
-        }
-        if (!m_outputs.empty()) {
-            (*m_out) << " outputs=[";
-            for (size_t i = 0; i < m_outputs.size(); ++i) {
-                if (i > 0)
-                    (*m_out) << ", ";
-                (*m_out) << m_outputs[i];
-            }
-            (*m_out) << "]";
-        }
+        printList(m_inputs, "inputs");
+        printList(m_outputs, "outputs");
         (*m_out) << std::endl;
         m_tracer->EndFunction();
     }
@@ -153,6 +169,20 @@ public:
     }
 
 private:
+    void printList(const std::vector<std::string>& list, const std::string& label) const {
+        if (list.empty()) {
+            return;
+        }
+        (*m_out) << ' ' << label << "=[";
+        for (size_t i = 0; i < list.size(); ++i) {
+            if (i > 0) {
+                (*m_out) << ", ";
+            }
+            (*m_out) << list[i];
+        }
+        (*m_out) << ']';
+    }
+
     void addInput(const std::string& name, const void* ptr) {
         std::ostringstream ss;
         ss << name << "@" << m_tracer->GetId(ptr, name);
@@ -165,7 +195,7 @@ private:
     }
 
     std::string m_func;
-    std::shared_ptr<std::ostream> m_out;
+    OStreamPtr m_out;
     SimpleTracer<Element>* m_tracer;
     std::vector<std::string> m_inputs;
     std::vector<std::string> m_outputs;
@@ -177,7 +207,7 @@ class SimpleTracer : public Tracer<Element> {
 public:
     explicit SimpleTracer(const std::string& filename = "trace.log")
         : m_stream(std::make_shared<std::ofstream>(filename, std::ios::app)), m_level(0) {}
-    explicit SimpleTracer(std::shared_ptr<std::ostream> stream) : m_stream(std::move(stream)), m_level(0) {}
+    explicit SimpleTracer(OStreamPtr stream) : m_stream(std::move(stream)), m_level(0) {}
     ~SimpleTracer() override = default;
 
     std::unique_ptr<FunctionTracer<Element>> TraceCryptoContextEvalFunc(std::string func) override {
@@ -206,29 +236,31 @@ public:
 
     std::string GetId(const void* ptr, const std::string& type) {
         auto it = m_idMap.find(ptr);
-        if (it != m_idMap.end())
+        if (it != m_idMap.end()) {
             return it->second;
+        }
 
-        std::string prefix;
-        if (type.find("ciphertext") != std::string::npos)
-            prefix = "ct";
-        else if (type.find("plaintext") != std::string::npos)
-            prefix = "pt";
-        else if (type.find("publickey") != std::string::npos)
-            prefix = "pk";
-        else if (type.find("privatekey") != std::string::npos)
-            prefix = "sk";
-        else
-            prefix = "obj";
-
-        size_t id         = ++m_counters[prefix];
-        std::string value = prefix + std::to_string(id);
-        m_idMap[ptr]      = value;
+        std::string prefix = typePrefix(type);
+        size_t id          = ++m_counters[prefix];
+        std::string value  = prefix + std::to_string(id);
+        m_idMap[ptr]       = value;
         return value;
     }
 
+    static std::string typePrefix(const std::string& type) {
+        if (type.find("ciphertext") != std::string::npos)
+            return "ct";
+        if (type.find("plaintext") != std::string::npos)
+            return "pt";
+        if (type.find("publickey") != std::string::npos)
+            return "pk";
+        if (type.find("privatekey") != std::string::npos)
+            return "sk";
+        return "obj";
+    }
+
 private:
-    std::shared_ptr<std::ostream> m_stream;
+    OStreamPtr m_stream;
     std::unordered_map<const void*, std::string> m_idMap;
     std::unordered_map<std::string, size_t> m_counters;
     size_t m_level;
