@@ -1,8 +1,7 @@
 #ifndef __TRACING_H__
 #define __TRACING_H__
 
-// FIXME: add CMake flags instead
-#define ENABLE_TRACER_SUPPORT
+#include "config_core.h"
 
 // This is intentionally not using "do {x} while(0)"
 // so that it can be used for member definitions, too.
