@@ -35,6 +35,7 @@
 #define __CIPHERTEXT_FWD_H__
 
 #include <memory>
+#include "utils/tracingsharedptr.h"
 
 namespace lbcrypto {
 
@@ -42,14 +43,14 @@ template <typename Element>
 class CiphertextImpl;
 
 template <typename Element>
-using Ciphertext = std::shared_ptr<CiphertextImpl<Element>>;
+using Ciphertext = TracingSharedPtr<CiphertextImpl<Element>>;
 
 template <typename Element>
-using ConstCiphertext = const std::shared_ptr<const CiphertextImpl<Element>>;
+using ConstCiphertext = const TracingSharedPtr<const CiphertextImpl<Element>>;
 
 // reqiured for std::vector
 template <typename Element>
-using ReadOnlyCiphertext = std::shared_ptr<const CiphertextImpl<Element>>;
+using ReadOnlyCiphertext = TracingSharedPtr<const CiphertextImpl<Element>>;
 
 }  // namespace lbcrypto
 
