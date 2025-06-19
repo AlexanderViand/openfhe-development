@@ -187,8 +187,7 @@ public:
    * @param ciphertext the ciphertext whose metadata to retrieve.
    */
     template <class Element>
-    static void StoreMetadata(std::shared_ptr<CiphertextImpl<Element>> ciphertext,
-                              std::shared_ptr<MetadataTest> mdata) {
+    static void StoreMetadata(Ciphertext ciphertext, std::shared_ptr<MetadataTest> mdata) {
         ciphertext->SetMetadataByKey("test", mdata);
     }
 
