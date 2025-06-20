@@ -279,6 +279,7 @@ the workflow’s ``inputs``.
 - MATHBACKEND2 jobs: mb2, mb2_tcm, mb2_debug, all, none
 - MATHBACKEND4 jobs: mb4, mb4_tcm, mb4_debug, all, none
 - MATHBACKEND6 jobs: mb6_ntl, mb6_ntl_tcm, mb6_ntl_debug_tcm, all, none
+- ENABLE_TRACER_SUPPORT: ON, OFF
 
 Each of these ``inputs`` enables or disables the corresponding job(s). Just a reminder that one job
 ``default`` is always implicitly enabled.

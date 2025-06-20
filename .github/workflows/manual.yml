@@ -35,6 +35,11 @@ on:
         type: string
         required: true
         default: 'none'
+      enable_tracer:
+        description: 'Enable tracer instrumentation (ON/OFF)'
+        type: string
+        required: true
+        default: 'OFF'
 
   workflow_dispatch:
     inputs:
@@ -100,6 +105,14 @@ on:
         - 'none'
         required: true
         default: 'none'
+      enable_tracer:
+        description: 'Enable tracer instrumentation'
+        type: choice
+        options:
+        - 'ON'
+        - 'OFF'
+        required: true
+        default: 'OFF'
 
 jobs:
   call:
@@ -111,6 +124,7 @@ jobs:
       mb2_jobs: "${{ inputs.mb2_jobs }}"
       mb4_jobs: "${{ inputs.mb4_jobs }}"
       mb6_jobs: "${{ inputs.mb6_jobs }}"
+      enable_tracer: "${{ inputs.enable_tracer }}"
       # cmake_args_map holds job specific additional cmake options. compiler flags, native_backend flag and
       # OpenMP flag are set in generic_workflow.yml
       cmake_args_map: '{
