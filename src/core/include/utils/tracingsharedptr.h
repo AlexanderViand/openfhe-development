@@ -39,8 +39,11 @@
 
 #ifdef ENABLE_TRACER_SUPPORT
     #include "cryptocontext.h"
+#endif
 
 namespace lbcrypto {
+
+#ifdef ENABLE_TRACER_SUPPORT
 
 // Trait to check if a type has GetCryptoContext() const
 template <class T, class = void>
