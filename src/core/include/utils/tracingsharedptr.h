@@ -70,12 +70,26 @@ public:
     }
 
     template <class U>
-    explicit TracingSharedPtr(const std::shared_ptr<U>& other) : Base(other) {
+    TracingSharedPtr(const std::shared_ptr<U>& other)  // NOLINT(runtime/explicit)
+        : Base(other) {
         trace("copy-ctor");
     }
 
     template <class U>
-    explicit TracingSharedPtr(std::shared_ptr<U>&& other) : Base(std::move(other)) {
+    TracingSharedPtr(std::shared_ptr<U>&& other)  // NOLINT(runtime/explicit)
+        : Base(std::move(other)) {
+        trace("move-ctor");
+    }
+
+    template <class U>
+    TracingSharedPtr(const TracingSharedPtr<U>& other)  // NOLINT(runtime/explicit)
+        : Base(other) {
+        trace("copy-ctor");
+    }
+
+    template <class U>
+    TracingSharedPtr(TracingSharedPtr<U>&& other)  // NOLINT(runtime/explicit)
+        : Base(std::move(other)) {
         trace("move-ctor");
     }
 
@@ -94,6 +108,20 @@ public:
     }
 
     TracingSharedPtr& operator=(TracingSharedPtr&& other) noexcept {
+        Base::operator=(std::move(other));
+        trace("move-assign");
+        return *this;
+    }
+
+    template <class U>
+    TracingSharedPtr& operator=(const TracingSharedPtr<U>& other) {
+        Base::operator=(other);
+        trace("copy-assign");
+        return *this;
+    }
+
+    template <class U>
+    TracingSharedPtr& operator=(TracingSharedPtr<U>&& other) {
         Base::operator=(std::move(other));
         trace("move-assign");
         return *this;
