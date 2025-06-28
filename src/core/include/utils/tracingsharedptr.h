@@ -8,14 +8,24 @@ namespace lbcrypto {
 #ifdef ENABLE_TRACER_SUPPORT
     #include <memory>
     #include <utility>
-    #include "cryptocontext.h"
+    #include <type_traits>
+    #include "cryptocontext-fwd.h"
+    #include "utils/tracing.h"
 
-// Trait to check if a type has GetCryptoContext() const
+// Helper used to emit trace events. Primary template does nothing.
 template <class T, class = void>
-struct HasGetCryptoContext : std::false_type {};
+struct TraceHelper {
+    static void onUpdate(const T*, const char*) {}
+};
 
+// Enabled when T has a GetCryptoContext() method
 template <class T>
-struct HasGetCryptoContext<T, std::void_t<decltype(std::declval<const T&>().GetCryptoContext())>> : std::true_type {};
+struct TraceHelper<T, std::void_t<decltype(std::declval<const T&>().GetCryptoContext())>> {
+    static void onUpdate(const T* obj, const char* name) {
+        auto cc = obj->GetCryptoContext();
+        cc->getTracer()->TraceDataUpdate(name);
+    }
+};
 
 /**
  * Wrapper around std::shared_ptr that emits tracing callbacks when constructed
@@ -113,12 +123,8 @@ public:
 
 private:
     void trace(const char* name) const {
-        if constexpr (HasGetCryptoContext<T>::value) {
-            T* obj = this->get();
-            if (obj) {
-                auto cc = obj->GetCryptoContext();
-                cc->getTracer()->TraceDataUpdate(name);
-            }
+        if (auto obj = this->get()) {
+            TraceHelper<T>::onUpdate(obj, name);
         }
     }
 };
