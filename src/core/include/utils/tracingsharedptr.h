@@ -7,8 +7,8 @@ namespace lbcrypto {
 
 #ifdef ENABLE_TRACER_SUPPORT
     #include <memory>
-    #include <utility>
     #include <type_traits>
+    #include <utility>
     #include "cryptocontext-fwd.h"
     #include "utils/tracing.h"
 
