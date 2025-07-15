@@ -33,12 +33,18 @@
 
 // If tracing is disabled, none of these definitions should be needed
 #ifdef ENABLE_TRACER_SUPPORT
+    #include <memory>
+    #include <iosfwd>
     #include "ciphertext-fwd.h"
     #include "encoding/plaintext-fwd.h"
     #include "key/publickey-fwd.h"
     #include "key/privatekey-fwd.h"
 
 namespace lbcrypto {
+
+// Global trace stream management
+std::shared_ptr<std::ostream> GetGlobalTraceStream();
+void SetGlobalTraceStream(std::shared_ptr<std::ostream> stream);
 
 /// Tracking for data movements
 template <typename Element>

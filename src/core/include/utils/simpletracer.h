@@ -12,6 +12,11 @@
     #include <unordered_map>
     #include <utility>
     #include <vector>
+    #include "shared-ptr.h"
+    #include "ciphertext-fwd.h"
+    #include "encoding/plaintext-fwd.h"
+    #include "key/publickey-fwd.h"
+    #include "key/privatekey-fwd.h"
 
 namespace lbcrypto {
 
@@ -173,12 +178,107 @@ private:
 };
 
 template <typename Element>
+class SimpleDataTracer : public DataTracer<Element> {
+public:
+    SimpleDataTracer(const std::string& operation, OStreamPtr out, SimpleTracer<Element>* tracer)
+        : m_operation(operation), m_out(std::move(out)), m_tracer(tracer) {}
+
+    ~SimpleDataTracer() override {
+        if (!m_sources.empty() || !m_destinations.empty()) {
+            (*m_out) << "DATA: " << m_operation;
+            if (!m_sources.empty()) {
+                (*m_out) << " sources=[";
+                for (size_t i = 0; i < m_sources.size(); ++i) {
+                    if (i > 0) (*m_out) << ", ";
+                    (*m_out) << m_sources[i];
+                }
+                (*m_out) << "]";
+            }
+            if (!m_destinations.empty()) {
+                (*m_out) << " destinations=[";
+                for (size_t i = 0; i < m_destinations.size(); ++i) {
+                    if (i > 0) (*m_out) << ", ";
+                    (*m_out) << m_destinations[i];
+                }
+                (*m_out) << "]";
+            }
+            (*m_out) << std::endl;
+        }
+    }
+
+    void registerSource(Ciphertext<Element> ciphertext, std::string name = "") override {
+        addSource(name.empty() ? "ciphertext" : name, ciphertext.get());
+    }
+    void registerSource(ConstCiphertext<Element> ciphertext, std::string name = "") override {
+        addSource(name.empty() ? "constciphertext" : name, ciphertext.get());
+    }
+    void registerSource(Plaintext plaintext, std::string name = "") override {
+        addSource(name.empty() ? "plaintext" : name, plaintext.get());
+    }
+    void registerSource(ConstPlaintext plaintext, std::string name = "") override {
+        addSource(name.empty() ? "constplaintext" : name, plaintext.get());
+    }
+    void registerSource(const PublicKey<Element> publicKey, std::string name = "") override {
+        addSource(name.empty() ? "publickey" : name, publicKey.get());
+    }
+    void registerSource(const PrivateKey<Element> privateKey, std::string name = "") override {
+        addSource(name.empty() ? "privatekey" : name, privateKey.get());
+    }
+
+    void registerDestination(Ciphertext<Element> ciphertext, std::string name = "") override {
+        addDestination(name.empty() ? "ciphertext" : name, ciphertext.get());
+    }
+    void registerDestination(ConstCiphertext<Element> ciphertext, std::string name = "") override {
+        addDestination(name.empty() ? "constciphertext" : name, ciphertext.get());
+    }
+    void registerDestination(Plaintext plaintext, std::string name = "") override {
+        addDestination(name.empty() ? "plaintext" : name, plaintext.get());
+    }
+    void registerDestination(ConstPlaintext plaintext, std::string name = "") override {
+        addDestination(name.empty() ? "constplaintext" : name, plaintext.get());
+    }
+    void registerDestination(const PublicKey<Element> publicKey, std::string name = "") override {
+        addDestination(name.empty() ? "publickey" : name, publicKey.get());
+    }
+    void registerDestination(const PrivateKey<Element> privateKey, std::string name = "") override {
+        addDestination(name.empty() ? "privatekey" : name, privateKey.get());
+    }
+
+private:
+    void addSource(const std::string& name, const void* ptr) {
+        std::ostringstream ss;
+        ss << name << "@" << m_tracer->GetId(ptr, name);
+        m_sources.push_back(ss.str());
+    }
+    
+    void addDestination(const std::string& name, const void* ptr) {
+        std::ostringstream ss;
+        ss << name << "@" << m_tracer->GetId(ptr, name);
+        m_destinations.push_back(ss.str());
+    }
+
+    std::string m_operation;
+    OStreamPtr m_out;
+    SimpleTracer<Element>* m_tracer;
+    std::vector<std::string> m_sources;
+    std::vector<std::string> m_destinations;
+};
+
+template <typename Element>
 class SimpleTracer : public Tracer<Element> {
 public:
-    explicit SimpleTracer(const std::string& filename = "trace.log")
-        : m_stream(std::make_shared<std::ofstream>(filename, std::ios::app)), m_level(0) {}
-    explicit SimpleTracer(OStreamPtr stream) : m_stream(std::move(stream)), m_level(0) {}
-    ~SimpleTracer() override = default;
+    explicit SimpleTracer(const std::string& filename = "simple-integers")
+        : m_stream(std::make_shared<std::ofstream>(filename, std::ios::app)), m_level(0) {
+        SetGlobalTraceStream(m_stream);
+        registerSharedPtrTracers();
+    }
+    explicit SimpleTracer(OStreamPtr stream) : m_stream(std::move(stream)), m_level(0) {
+        SetGlobalTraceStream(m_stream);
+        registerSharedPtrTracers();
+    }
+    ~SimpleTracer() override {
+        unregisterSharedPtrTracers();
+    }
 
     std::unique_ptr<FunctionTracer<Element>> TraceCryptoContextEvalFunc(std::string func) override {
         size_t level = m_level++;
@@ -200,7 +300,7 @@ public:
     }
 
     virtual std::unique_ptr<DataTracer<Element>> TraceDataUpdate(std::string function_name) override {
-        return std::make_unique<NullDataTracer<Element>>();
+        return std::make_unique<SimpleDataTracer<Element>>(function_name, m_stream, this);
     }
 
     void EndFunction() {
@@ -221,6 +321,17 @@ public:
         return value;
     }
 
+    void RegisterAlias(const void* alias_ptr, const void* original_ptr) {
+        auto it = m_idMap.find(original_ptr);
+        if (it != m_idMap.end()) {
+            m_idMap[alias_ptr] = it->second;
+        }
+    }
+
+    void UnregisterAlias(const void* alias_ptr) {
+        m_idMap.erase(alias_ptr);
+    }
+
     static std::string typePrefix(const std::string& type) {
         if (type.find("ciphertext") != std::string::npos)
             return "ct";
@@ -234,11 +345,106 @@ public:
     }
 
 private:
+    void registerSharedPtrTracers() {
+        // Register CiphertextImpl tracer
+        SetSharedPtrTracer<CiphertextImpl<Element>>(
+            [this](const std::string& op, const CiphertextImpl<Element>* src, 
+                   const CiphertextImpl<Element>* dst) {
+                (*m_stream) << "SharedPtr:" << op;
+                if (src || dst) {
+                    (*m_stream) << " ";
+                    bool needComma = false;
+                    if (src) {
+                        (*m_stream) << "source=[ciphertext@" << GetId(src, "ciphertext") << "]";
+                        needComma = true;
+                    }
+                    if (dst) {
+                        if (needComma) (*m_stream) << " ";
+                        (*m_stream) << "dest=[ciphertext@" << GetId(dst, "ciphertext") << "]";
+                    }
+                }
+                (*m_stream) << std::endl;
+                m_stream->flush();
+            });
+        
+        // Register PlaintextImpl tracer
+        SetSharedPtrTracer<PlaintextImpl>(
+            [this](const std::string& op, const PlaintextImpl* src, 
+                   const PlaintextImpl* dst) {
+                (*m_stream) << "SharedPtr:" << op;
+                if (src || dst) {
+                    (*m_stream) << " ";
+                    bool needComma = false;
+                    if (src) {
+                        (*m_stream) << "source=[plaintext@" << GetId(src, "plaintext") << "]";
+                        needComma = true;
+                    }
+                    if (dst) {
+                        if (needComma) (*m_stream) << " ";
+                        (*m_stream) << "dest=[plaintext@" << GetId(dst, "plaintext") << "]";
+                    }
+                }
+                (*m_stream) << std::endl;
+                m_stream->flush();
+            });
+        
+        // Register PublicKeyImpl tracer
+        SetSharedPtrTracer<PublicKeyImpl<Element>>(
+            [this](const std::string& op, const PublicKeyImpl<Element>* src, 
+                   const PublicKeyImpl<Element>* dst) {
+                (*m_stream) << "SharedPtr:" << op;
+                if (src || dst) {
+                    (*m_stream) << " ";
+                    bool needComma = false;
+                    if (src) {
+                        (*m_stream) << "source=[publickey@" << GetId(src, "publickey") << "]";
+                        needComma = true;
+                    }
+                    if (dst) {
+                        if (needComma) (*m_stream) << " ";
+                        (*m_stream) << "dest=[publickey@" << GetId(dst, "publickey") << "]";
+                    }
+                }
+                (*m_stream) << std::endl;
+                m_stream->flush();
+            });
+        
+        // Register PrivateKeyImpl tracer
+        SetSharedPtrTracer<PrivateKeyImpl<Element>>(
+            [this](const std::string& op, const PrivateKeyImpl<Element>* src, 
+                   const PrivateKeyImpl<Element>* dst) {
+                (*m_stream) << "SharedPtr:" << op;
+                if (src || dst) {
+                    (*m_stream) << " ";
+                    bool needComma = false;
+                    if (src) {
+                        (*m_stream) << "source=[privatekey@" << GetId(src, "privatekey") << "]";
+                        needComma = true;
+                    }
+                    if (dst) {
+                        if (needComma) (*m_stream) << " ";
+                        (*m_stream) << "dest=[privatekey@" << GetId(dst, "privatekey") << "]";
+                    }
+                }
+                (*m_stream) << std::endl;
+                m_stream->flush();
+            });
+    }
+    
+    void unregisterSharedPtrTracers() {
+        // Clear all registered tracers
+        SetSharedPtrTracer<CiphertextImpl<Element>>(nullptr);
+        SetSharedPtrTracer<PlaintextImpl>(nullptr);
+        SetSharedPtrTracer<PublicKeyImpl<Element>>(nullptr);
+        SetSharedPtrTracer<PrivateKeyImpl<Element>>(nullptr);
+    }
+
     OStreamPtr m_stream;
     std::unordered_map<const void*, std::string> m_idMap;
     std::unordered_map<std::string, size_t> m_counters;
     size_t m_level;
 };
+
 
 }  // namespace lbcrypto
 

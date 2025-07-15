@@ -465,7 +465,7 @@ Ciphertext<DCRTPoly> MultipartyRNS::IntBootEncrypt(const PublicKey<DCRTPoly> pub
         cv.push_back(a * v + e1);
     }
 
-    Ciphertext<DCRTPoly> ciphertext(std::make_shared<CiphertextImpl<DCRTPoly>>(publicKey));
+    Ciphertext<DCRTPoly> ciphertext(shared_ptr::make_shared<CiphertextImpl<DCRTPoly>>(publicKey));
     ciphertext->SetElements(std::move(cv));
 
     // Ciphertext depth, level, and scaling factor should be equal to that of the plaintext.

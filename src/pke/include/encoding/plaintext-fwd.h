@@ -35,16 +35,16 @@
 #ifndef __PLAINTEXT_FWD_H__
 #define __PLAINTEXT_FWD_H__
 
-#include <memory>
+#include "shared-ptr.h"
 
 namespace lbcrypto {
 
 class PlaintextImpl;
 
-using Plaintext      = std::shared_ptr<PlaintextImpl>;
-using ConstPlaintext = const std::shared_ptr<const PlaintextImpl>;
+using Plaintext      = SharedPtr<PlaintextImpl>;
+using ConstPlaintext = const SharedPtr<const PlaintextImpl>;
 
-using ReadOnlyPlaintext = std::shared_ptr<const PlaintextImpl>;
+using ReadOnlyPlaintext = SharedPtr<const PlaintextImpl>;
 
 }  // namespace lbcrypto
 

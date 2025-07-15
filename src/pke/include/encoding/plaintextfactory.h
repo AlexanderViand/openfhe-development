@@ -60,13 +60,13 @@ public:
                                    SCHEME schemeID = SCHEME::INVALID_SCHEME, CKKSDataType cdt = REAL) {
         switch (encoding) {
             case COEF_PACKED_ENCODING:
-                return std::make_shared<CoefPackedEncoding>(vp, ep, schemeID);
+                return shared_ptr::make_shared<CoefPackedEncoding>(vp, ep, schemeID);
             case PACKED_ENCODING:
-                return std::make_shared<PackedEncoding>(vp, ep);
+                return shared_ptr::make_shared<PackedEncoding>(vp, ep);
             case STRING_ENCODING:
-                return std::make_shared<StringEncoding>(vp, ep);
+                return shared_ptr::make_shared<StringEncoding>(vp, ep);
             case CKKS_PACKED_ENCODING:
-                return std::make_shared<CKKSPackedEncoding>(vp, ep, cdt);
+                return shared_ptr::make_shared<CKKSPackedEncoding>(vp, ep, cdt);
             default:
                 OPENFHE_THROW("Unknown plaintext encoding type in MakePlaintext");
         }

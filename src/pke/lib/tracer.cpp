@@ -28,23 +28,26 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //==================================================================================
-/*
- * It is a lightweight file to be included where we need the declaration of PublicKey only
- *
- */
-#ifndef __PUBLICKEY_FWD_H__
-#define __PUBLICKEY_FWD_H__
 
-#include "shared-ptr.h"
+#include "ciphertext-fwd.h"
+
+#ifdef ENABLE_TRACER_SUPPORT
 
 namespace lbcrypto {
 
-template <typename Element>
-class PublicKeyImpl;
+// Global trace stream management
+namespace {
+thread_local std::weak_ptr<std::ostream> g_currentTraceStream;
+}
 
-template <typename Element>
-using PublicKey = SharedPtr<PublicKeyImpl<Element>>;
+void SetGlobalTraceStream(std::shared_ptr<std::ostream> stream) {
+    g_currentTraceStream = stream;
+}
+
+std::shared_ptr<std::ostream> GetGlobalTraceStream() {
+    return g_currentTraceStream.lock();
+}
 
 }  // namespace lbcrypto
 
-#endif  // __PUBLICKEY_FWD_H__
+#endif  // ENABLE_TRACER_SUPPORT

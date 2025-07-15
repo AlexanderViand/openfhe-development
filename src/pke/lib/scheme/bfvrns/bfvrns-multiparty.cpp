@@ -51,8 +51,8 @@ KeyPair<DCRTPoly> MultipartyBFVRNS::MultipartyKeyGen(CryptoContext<DCRTPoly> cc,
                                                      bool makeSparse) {
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRNS>(cc->GetCryptoParameters());
 
-    KeyPair<DCRTPoly> keyPair(std::make_shared<PublicKeyImpl<DCRTPoly>>(cc),
-                              std::make_shared<PrivateKeyImpl<DCRTPoly>>(cc));
+    KeyPair<DCRTPoly> keyPair(shared_ptr::make_shared<PublicKeyImpl<DCRTPoly>>(cc),
+                              shared_ptr::make_shared<PrivateKeyImpl<DCRTPoly>>(cc));
 
     auto elementParams = cryptoParams->GetElementParams();
     if (cryptoParams->GetEncryptionTechnique() == EXTENDED) {
@@ -87,8 +87,8 @@ KeyPair<DCRTPoly> MultipartyBFVRNS::MultipartyKeyGen(CryptoContext<DCRTPoly> cc,
                                                      bool makeSparse, bool fresh) {
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRNS>(cc->GetCryptoParameters());
 
-    KeyPair<DCRTPoly> keyPair(std::make_shared<PublicKeyImpl<DCRTPoly>>(cc),
-                              std::make_shared<PrivateKeyImpl<DCRTPoly>>(cc));
+    KeyPair<DCRTPoly> keyPair(shared_ptr::make_shared<PublicKeyImpl<DCRTPoly>>(cc),
+                              shared_ptr::make_shared<PrivateKeyImpl<DCRTPoly>>(cc));
 
     auto elementParams = cryptoParams->GetElementParams();
     if (cryptoParams->GetEncryptionTechnique() == EXTENDED) {
@@ -152,7 +152,7 @@ DecryptResult MultipartyBFVRNS::MultipartyDecryptFusion(const std::vector<Cipher
     size_t sizeQl = b.GetNumOfElements();
 
     const auto elementParams = cryptoParams->GetElementParams();
-    size_t sizeQ = elementParams->GetParams().size();
+    size_t sizeQ             = elementParams->GetParams().size();
 
     // use RNS procedures only if the number of RNS limbs is the same as for fresh ciphertexts
     if (sizeQl == sizeQ) {
@@ -174,12 +174,12 @@ DecryptResult MultipartyBFVRNS::MultipartyDecryptFusion(const std::vector<Cipher
         }
     }
     else {
-    	// for the case when compress was called, we automatically reduce the polynomial to 1 RNS limb
+        // for the case when compress was called, we automatically reduce the polynomial to 1 RNS limb
         size_t diffQl = sizeQ - sizeQl;
         size_t levels = sizeQl - 1;
         for (size_t l = 0; l < levels; ++l) {
-			b.DropLastElementAndScale(cryptoParams->GetQlQlInvModqlDivqlModq(diffQl + l),
-										  cryptoParams->GetqlInvModq(diffQl + l));
+            b.DropLastElementAndScale(cryptoParams->GetQlQlInvModqlDivqlModq(diffQl + l),
+                                      cryptoParams->GetqlInvModq(diffQl + l));
         }
 
         b.SetFormat(Format::COEFFICIENT);

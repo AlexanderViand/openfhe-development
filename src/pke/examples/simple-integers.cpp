@@ -51,6 +51,8 @@ int main() {
     cryptoContext->Enable(KEYSWITCH);
     cryptoContext->Enable(LEVELEDSHE);
 
+    IF_TRACE(std::cout << "Tracing enabled." << std::endl);
+
     // auto tracer = std::make_shared<MlirTracer<DCRTPoly>>("simple_integers.mlir");
     IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("simple_integers"));
     IF_TRACE(cryptoContext->setTracer(std::move(tracer)));

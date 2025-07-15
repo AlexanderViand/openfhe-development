@@ -34,21 +34,23 @@
 #ifndef __CIPHERTEXT_FWD_H__
 #define __CIPHERTEXT_FWD_H__
 
-#include <memory>
+#include "shared-ptr.h"
+
 namespace lbcrypto {
 
+// Forward declaration of CiphertextImpl
 template <typename Element>
 class CiphertextImpl;
 
 template <typename Element>
-using Ciphertext = std::shared_ptr<CiphertextImpl<Element>>;
+using Ciphertext = SharedPtr<CiphertextImpl<Element>>;
 
 template <typename Element>
-using ConstCiphertext = const std::shared_ptr<const CiphertextImpl<Element>>;
+using ConstCiphertext = const SharedPtr<const CiphertextImpl<Element>>;
 
 // reqiured for std::vector
 template <typename Element>
-using ReadOnlyCiphertext = std::shared_ptr<const CiphertextImpl<Element>>;
+using ReadOnlyCiphertext = SharedPtr<const CiphertextImpl<Element>>;
 
 }  // namespace lbcrypto
 

@@ -166,7 +166,7 @@ Ciphertext<DCRTPoly> MultipartyCKKSRNS::IntMPBootRandomElementGen(std::shared_pt
     DCRTPoly crp(dug, ildcrtparams);
     crp.SetFormat(Format::EVALUATION);
 
-    Ciphertext<DCRTPoly> outCtxt(std::make_shared<CiphertextImpl<DCRTPoly>>(publicKey));
+    Ciphertext<DCRTPoly> outCtxt(shared_ptr::make_shared<CiphertextImpl<DCRTPoly>>(publicKey));
 
     outCtxt->SetElements({std::move(crp)});
     return outCtxt;
@@ -367,7 +367,7 @@ std::vector<Ciphertext<DCRTPoly>> MultipartyCKKSRNS::IntMPBootDecrypt(const Priv
 
     // Encryption to Share protocol to compute: h_{0,i}
     DCRTPoly mdsp = GenerateMaskedDecryptionShare(cc, privateKey, c1, Mi, compressionLevel);
-    Ciphertext<DCRTPoly> maskedDecryptionShare(std::make_shared<CiphertextImpl<DCRTPoly>>(privateKey));
+    Ciphertext<DCRTPoly> maskedDecryptionShare(shared_ptr::make_shared<CiphertextImpl<DCRTPoly>>(privateKey));
     maskedDecryptionShare->SetElements({std::move(mdsp)});
 
     // Generate reEncryptionShares: secretShare M_i (no need to recompute, use M_i from above)
@@ -378,7 +378,7 @@ std::vector<Ciphertext<DCRTPoly>> MultipartyCKKSRNS::IntMPBootDecrypt(const Priv
 
     // Shares to Encryption protocol to compute h_{1,i}
     DCRTPoly rsp = GenerateReEncryptionShare(cc, privateKey, a, Mi, compressionLevel);
-    Ciphertext<DCRTPoly> reEncryptionShare(std::make_shared<CiphertextImpl<DCRTPoly>>(privateKey));
+    Ciphertext<DCRTPoly> reEncryptionShare(shared_ptr::make_shared<CiphertextImpl<DCRTPoly>>(privateKey));
     reEncryptionShare->SetElements({std::move(rsp)});
 
     std::vector<Ciphertext<DCRTPoly>> result = {maskedDecryptionShare, reEncryptionShare};
@@ -429,7 +429,7 @@ Ciphertext<DCRTPoly> MultipartyCKKSRNS::IntMPBootEncrypt(const PublicKey<DCRTPol
 
     c0Prime = c0Prime + sharesPair[1]->GetElements()[0];
 
-    Ciphertext<DCRTPoly> outCtxt(std::make_shared<CiphertextImpl<DCRTPoly>>(publicKey));
+    Ciphertext<DCRTPoly> outCtxt(shared_ptr::make_shared<CiphertextImpl<DCRTPoly>>(publicKey));
 
     outCtxt->SetElements({std::move(c0Prime), std::move(a->GetElements()[0])});
 
@@ -481,7 +481,7 @@ Ciphertext<DCRTPoly> MultipartyCKKSRNS::IntBootAdjustScale(ConstCiphertext<DCRTP
 
         ciphertextAdjusted = cc->GetScheme()->ModReduceInternal(ciphertextAdjusted, BASE_NUM_LEVELS_TO_DROP);
         ciphertextAdjusted->SetScalingFactor(targetSF);
-        
+
         return ciphertextAdjusted;
     }
     else {

@@ -37,7 +37,7 @@
 namespace lbcrypto {
 
 Ciphertext<DCRTPoly> PKERNS::Encrypt(DCRTPoly plaintext, const PrivateKey<DCRTPoly> privateKey) const {
-    Ciphertext<DCRTPoly> ciphertext(std::make_shared<CiphertextImpl<DCRTPoly>>(privateKey));
+    Ciphertext<DCRTPoly> ciphertext(shared_ptr::make_shared<CiphertextImpl<DCRTPoly>>(privateKey));
 
     const std::shared_ptr<ParmType> ptxtParams = plaintext.GetParams();
     std::shared_ptr<std::vector<DCRTPoly>> ba  = EncryptZeroCore(privateKey, ptxtParams);
@@ -53,7 +53,7 @@ Ciphertext<DCRTPoly> PKERNS::Encrypt(DCRTPoly plaintext, const PrivateKey<DCRTPo
 }
 
 Ciphertext<DCRTPoly> PKERNS::Encrypt(DCRTPoly plaintext, const PublicKey<DCRTPoly> publicKey) const {
-    Ciphertext<DCRTPoly> ciphertext(std::make_shared<CiphertextImpl<DCRTPoly>>(publicKey));
+    Ciphertext<DCRTPoly> ciphertext(shared_ptr::make_shared<CiphertextImpl<DCRTPoly>>(publicKey));
 
     const std::shared_ptr<ParmType> ptxtParams = plaintext.GetParams();
     std::shared_ptr<std::vector<DCRTPoly>> ba  = EncryptZeroCore(publicKey, ptxtParams);

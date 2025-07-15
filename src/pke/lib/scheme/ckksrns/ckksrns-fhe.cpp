@@ -2293,8 +2293,8 @@ Plaintext FHECKKSRNS::MakeAuxPlaintext(const CryptoContextImpl<DCRTPoly>& cc, co
 
     double scFact = cryptoParams->GetScalingFactorReal(level);
 
-    Plaintext p = Plaintext(std::make_shared<CKKSPackedEncoding>(params, cc.GetEncodingParams(), value, noiseScaleDeg,
-                                                                 level, scFact, slots, COMPLEX));
+    Plaintext p = Plaintext(shared_ptr::make_shared<CKKSPackedEncoding>(params, cc.GetEncodingParams(), value,
+                                                                        noiseScaleDeg, level, scFact, slots, COMPLEX));
 
     DCRTPoly& plainElement = p->GetElement<DCRTPoly>();
 
@@ -2440,8 +2440,8 @@ Plaintext FHECKKSRNS::MakeAuxPlaintext(const CryptoContextImpl<DCRTPoly>& cc, co
 
     double scFact = cryptoParams->GetScalingFactorReal(level);
 
-    Plaintext p = Plaintext(std::make_shared<CKKSPackedEncoding>(params, cc.GetEncodingParams(), value, noiseScaleDeg,
-                                                                 level, scFact, slots, COMPLEX));
+    Plaintext p = Plaintext(shared_ptr::make_shared<CKKSPackedEncoding>(params, cc.GetEncodingParams(), value,
+                                                                        noiseScaleDeg, level, scFact, slots, COMPLEX));
 
     DCRTPoly& plainElement = p->GetElement<DCRTPoly>();
 
@@ -2677,7 +2677,7 @@ EvalKey<DCRTPoly> FHECKKSRNS::ConjugateKeyGen(const PrivateKey<DCRTPoly> private
     const DCRTPoly& s = privateKey->GetPrivateElement();
     uint32_t N        = s.GetRingDimension();
 
-    PrivateKey<DCRTPoly> privateKeyPermuted = std::make_shared<PrivateKeyImpl<DCRTPoly>>(cc);
+    PrivateKey<DCRTPoly> privateKeyPermuted = shared_ptr::make_shared<PrivateKeyImpl<DCRTPoly>>(cc);
 
     uint32_t index = 2 * N - 1;
     std::vector<uint32_t> vec(N);

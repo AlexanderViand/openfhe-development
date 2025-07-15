@@ -40,6 +40,8 @@
 #include "cryptoobject.h"
 #include "key/key.h"
 #include "metadata.h"
+#include "key/publickey-fwd.h"
+#include "key/privatekey-fwd.h"
 
 #include <map>
 #include <memory>
@@ -78,7 +80,7 @@ public:
    *
    * @param k key whose CryptoObject parameters will get cloned
    */
-    explicit CiphertextImpl(const std::shared_ptr<Key<Element>>& k)
+    explicit CiphertextImpl(const SharedPtr<Key<Element>>& k)
         : CryptoObject<Element>(k->GetCryptoContext(), k->GetKeyTag()) {}
 
     /**
@@ -394,7 +396,7 @@ public:
    * and metadata.
    */
     virtual Ciphertext<Element> CloneEmpty() const {
-        auto ct(std::make_shared<CiphertextImpl<Element>>(this->GetCryptoContext(), this->GetKeyTag(), m_encodingType));
+        auto ct(shared_ptr::make_shared<CiphertextImpl<Element>>(this->GetCryptoContext(), this->GetKeyTag(), m_encodingType));
         ct->m_slots            = m_slots;
         ct->m_level            = m_level;
         ct->m_hopslevel        = m_hopslevel;

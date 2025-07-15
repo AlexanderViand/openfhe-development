@@ -44,8 +44,8 @@ BFV implementation. See https://eprint.iacr.org/2021/204 for details.
 namespace lbcrypto {
 
 KeyPair<DCRTPoly> PKEBFVRNS::KeyGenInternal(CryptoContext<DCRTPoly> cc, bool makeSparse) const {
-    KeyPair<DCRTPoly> keyPair(std::make_shared<PublicKeyImpl<DCRTPoly>>(cc),
-                              std::make_shared<PrivateKeyImpl<DCRTPoly>>(cc));
+    KeyPair<DCRTPoly> keyPair(shared_ptr::make_shared<PublicKeyImpl<DCRTPoly>>(cc),
+                              shared_ptr::make_shared<PrivateKeyImpl<DCRTPoly>>(cc));
 
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBFVRNS>(cc->GetCryptoParameters());
 
@@ -97,7 +97,7 @@ KeyPair<DCRTPoly> PKEBFVRNS::KeyGenInternal(CryptoContext<DCRTPoly> cc, bool mak
 }
 
 Ciphertext<DCRTPoly> PKEBFVRNS::Encrypt(DCRTPoly ptxt, const PrivateKey<DCRTPoly> privateKey) const {
-    Ciphertext<DCRTPoly> ciphertext(std::make_shared<CiphertextImpl<DCRTPoly>>(privateKey));
+    Ciphertext<DCRTPoly> ciphertext(shared_ptr::make_shared<CiphertextImpl<DCRTPoly>>(privateKey));
 
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBFVRNS>(privateKey->GetCryptoParameters());
 
@@ -155,7 +155,7 @@ Ciphertext<DCRTPoly> PKEBFVRNS::Encrypt(DCRTPoly ptxt, const PrivateKey<DCRTPoly
 }
 
 Ciphertext<DCRTPoly> PKEBFVRNS::Encrypt(DCRTPoly ptxt, const PublicKey<DCRTPoly> publicKey) const {
-    Ciphertext<DCRTPoly> ciphertext(std::make_shared<CiphertextImpl<DCRTPoly>>(publicKey));
+    Ciphertext<DCRTPoly> ciphertext(shared_ptr::make_shared<CiphertextImpl<DCRTPoly>>(publicKey));
 
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBFVRNS>(publicKey->GetCryptoParameters());
 

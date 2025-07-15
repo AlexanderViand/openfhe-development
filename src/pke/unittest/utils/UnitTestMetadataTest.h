@@ -33,6 +33,7 @@
 
 #include "metadata.h"
 #include "ciphertext.h"
+#include "ciphertext-fwd.h"
 
 #include <memory>
 #include <string>
@@ -191,6 +192,27 @@ public:
                               std::shared_ptr<MetadataTest> mdata) {
         ciphertext->SetMetadataByKey("test", mdata);
     }
+
+#ifdef ENABLE_TRACER_SUPPORT
+    // Overloaded versions for SharedPtr (only when tracing is enabled)
+    template <class Element>
+    static const std::shared_ptr<MetadataTest> CloneMetadata(
+        const SharedPtr<const CiphertextImpl<Element>>& ciphertext) {
+        return CloneMetadata(ciphertext.internal());
+    }
+
+    template <class Element>
+    static const std::shared_ptr<MetadataTest> GetMetadata(
+        const SharedPtr<const CiphertextImpl<Element>>& ciphertext) {
+        return GetMetadata(ciphertext.internal());
+    }
+
+    template <class Element>
+    static void StoreMetadata(SharedPtr<CiphertextImpl<Element>>& ciphertext,
+                              std::shared_ptr<MetadataTest> mdata) {
+        StoreMetadata(ciphertext.internal(), mdata);
+    }
+#endif
 
 protected:
     /**

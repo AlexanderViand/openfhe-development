@@ -443,9 +443,9 @@ protected:
                               std::to_string(ringDim / 2) + "] if the scheme is CKKS");
             }
             // TODO (dsuponit): we should call a version of MakePlaintext instead of calling Plaintext() directly here
-            p = Plaintext(std::make_shared<CKKSPackedEncoding>(elemParamsPtr, this->GetEncodingParams(), value,
-                                                               noiseScaleDeg, level, scFact, slots,
-                                                               this->GetCKKSDataType()));
+            p = Plaintext(shared_ptr::make_shared<CKKSPackedEncoding>(elemParamsPtr, this->GetEncodingParams(), value,
+                                                                      noiseScaleDeg, level, scFact, slots,
+                                                                      this->GetCKKSDataType()));
         }
         else {
             // Check if plaintext has got enough slots for data (value)
@@ -457,8 +457,9 @@ protected:
                               std::to_string(ringDim / 2) + "] if the scheme is CKKS");
             }
             // TODO (dsuponit): we should call a version of MakePlaintext instead of calling Plaintext() directly here
-            p = Plaintext(std::make_shared<CKKSPackedEncoding>(params, this->GetEncodingParams(), value, noiseScaleDeg,
-                                                               level, scFact, slots, this->GetCKKSDataType()));
+            p = Plaintext(shared_ptr::make_shared<CKKSPackedEncoding>(params, this->GetEncodingParams(), value,
+                                                                      noiseScaleDeg, level, scFact, slots,
+                                                                      this->GetCKKSDataType()));
         }
         p->Encode();
 
@@ -541,7 +542,7 @@ public:
     // TODO (dsuponit): investigate if we really need 2 constructors for CryptoContextImpl as one of them take regular pointer
     // and the other one takes shared_ptr
     CryptoContextImpl(CryptoParametersBase<Element>* params = nullptr, SchemeBase<Element>* scheme = nullptr,
-                      SCHEME schemeId = SCHEME::INVALID_SCHEME IF_TRACE(,Tracer<Element>* tracer = nullptr)) {
+                      SCHEME schemeId = SCHEME::INVALID_SCHEME IF_TRACE(, Tracer<Element>* tracer = nullptr)) {
         this->params.reset(params);
         this->scheme.reset(scheme);
         this->m_keyGenLevel = 0;
@@ -557,9 +558,9 @@ public:
     * @param scheme sharedpointer to Crypto Scheme object
     * @param schemeId scheme identifier
     */
-    CryptoContextImpl(std::shared_ptr<CryptoParametersBase<Element>> params,
-                      std::shared_ptr<SchemeBase<Element>> scheme, SCHEME schemeId = SCHEME::INVALID_SCHEME
-                      IF_TRACE(,std::shared_ptr<Tracer<Element>> tracer = nullptr)) {
+    CryptoContextImpl(
+        std::shared_ptr<CryptoParametersBase<Element>> params, std::shared_ptr<SchemeBase<Element>> scheme,
+        SCHEME schemeId = SCHEME::INVALID_SCHEME IF_TRACE(, std::shared_ptr<Tracer<Element>> tracer = nullptr)) {
         this->params        = params;
         this->scheme        = scheme;
         this->m_keyGenLevel = 0;
@@ -1612,7 +1613,8 @@ public:
             IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAdd", {ciphertext}));
             IF_TRACE(t->registerInput(scalar));
             return REGISTER_IF_TRACE(GetScheme()->EvalAdd(ciphertext, scalar));
-        } else {
+        }
+        else {
             IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSub", {ciphertext}));
             IF_TRACE(t->registerInput(-scalar));
             return REGISTER_IF_TRACE(GetScheme()->EvalSub(ciphertext, -scalar));
@@ -2742,9 +2744,9 @@ public:
 
         IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAddMany"));
         IF_TRACE(for (const auto& ct : ciphertextVec) t->registerInput(ct));
-        if (ciphertextVec.size() == 1) 
+        if (ciphertextVec.size() == 1)
             return REGISTER_IF_TRACE(t, ciphertextVec[0]);
-        
+
         return REGISTER_IF_TRACE(t, GetScheme()->EvalAddMany(ciphertextVec));
     }
 
