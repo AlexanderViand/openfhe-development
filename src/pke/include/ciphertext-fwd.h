@@ -35,7 +35,6 @@
 #define __CIPHERTEXT_FWD_H__
 
 #include <memory>
-
 namespace lbcrypto {
 
 template <typename Element>

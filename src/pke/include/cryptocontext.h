@@ -56,6 +56,7 @@
 #include "utils/caller_info.h"
 #include "utils/serial.h"
 #include "utils/type_name.h"
+#include "utils/tracing.h"
 
 #include <algorithm>
 #include <functional>
@@ -180,6 +181,11 @@ class CryptoContextImpl : public Serializable {
             }
         }
 
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("MakePlaintext"));
+        IF_TRACE(t->registerInput(encoding, "encoding"));
+        IF_TRACE(t->registerInput(value, "value"));
+        IF_TRACE(t->registerInput(depth, "depth"));
+
         // uses a parameter set with a reduced number of RNS limbs corresponding to the level
         std::shared_ptr<ILDCRTParams<DCRTPoly::Integer>> elemParamsPtr;
         if (level != 0) {
@@ -210,6 +216,7 @@ class CryptoContextImpl : public Serializable {
                                                       getSchemeId(), depth, level, scf);
         if (setNoiseScaleDeg)
             p->SetNoiseScaleDeg(2);
+        IF_TRACE(t->registerOutput(p));
 
         return p;
     }
@@ -224,14 +231,25 @@ class CryptoContextImpl : public Serializable {
     */
     template <typename Value1>
     static Plaintext MakePlaintext(PlaintextEncodings encoding, CryptoContext<Element> cc, const Value1& value) {
-        return PlaintextFactory::MakePlaintext(value, encoding, cc->GetElementParams(), cc->GetEncodingParams());
+        IF_TRACE(auto t = cc.m_tracer->TraceCryptoContextEvalFunc("MakePlaintext"));
+        IF_TRACE(t->registerInput(encoding, "encoding"));
+        IF_TRACE(t->registerInput(cc, "cc"));
+        IF_TRACE(t->registerInput(value, "value"));
+        return REGISTER_IF_TRACE(
+            PlaintextFactory::MakePlaintext(value, encoding, cc->GetElementParams(), cc->GetEncodingParams()));
     }
 
     template <typename Value1, typename Value2>
     static Plaintext MakePlaintext(PlaintextEncodings encoding, CryptoContext<Element> cc, const Value1& value,
                                    const Value2& value2) {
-        return PlaintextFactory::MakePlaintext(encoding, cc->GetElementParams(), cc->GetEncodingParams(), value,
-                                               value2);
+        IF_TRACE(auto t = cc.m_tracer->TraceCryptoContextEvalFunc("MakePlaintext"));
+        IF_TRACE(t->registerInput(encoding, "encoding"));
+        IF_TRACE(t->registerInput(cc, "cc"));
+        // FIXME: figure out what this template needs to be able to be instantiated with
+        // IF_TRACE(t->registerInput(value, "value"));
+        // IF_TRACE(t->registerInput(value2, "value2"));
+        return REGISTER_IF_TRACE(
+            PlaintextFactory::MakePlaintext(encoding, cc->GetElementParams(), cc->GetEncodingParams(), value, value2));
     }
 
     /**
@@ -273,6 +291,8 @@ protected:
     SCHEME m_schemeId{SCHEME::INVALID_SCHEME};
 
     uint32_t m_keyGenLevel{0};
+
+    IF_TRACE(std::shared_ptr<Tracer<Element>> m_tracer);
 
     /**
     * @brief TypeCheck makes sure that an operation between two ciphertexts is permitted
@@ -507,6 +527,10 @@ public:
         return this->m_schemeId;
     }
 
+    IF_TRACE(void setTracer(std::shared_ptr<Tracer<Element>>&& tracer) { m_tracer = tracer; })
+
+    IF_TRACE(std::shared_ptr<Tracer<Element>> getTracer() const { return m_tracer; })
+
     /**
     * @brief Constructor from raw pointers to parameters and scheme
     *
@@ -517,11 +541,13 @@ public:
     // TODO (dsuponit): investigate if we really need 2 constructors for CryptoContextImpl as one of them take regular pointer
     // and the other one takes shared_ptr
     CryptoContextImpl(CryptoParametersBase<Element>* params = nullptr, SchemeBase<Element>* scheme = nullptr,
-                      SCHEME schemeId = SCHEME::INVALID_SCHEME) {
+                      SCHEME schemeId = SCHEME::INVALID_SCHEME IF_TRACE(,Tracer<Element>* tracer = nullptr)) {
         this->params.reset(params);
         this->scheme.reset(scheme);
         this->m_keyGenLevel = 0;
         this->m_schemeId    = schemeId;
+        IF_TRACE(this->m_tracer =
+                     tracer ? std::shared_ptr<Tracer<Element>>(tracer) : std::make_shared<NullTracer<Element>>());
     }
 
     /**
@@ -532,11 +558,13 @@ public:
     * @param schemeId scheme identifier
     */
     CryptoContextImpl(std::shared_ptr<CryptoParametersBase<Element>> params,
-                      std::shared_ptr<SchemeBase<Element>> scheme, SCHEME schemeId = SCHEME::INVALID_SCHEME) {
+                      std::shared_ptr<SchemeBase<Element>> scheme, SCHEME schemeId = SCHEME::INVALID_SCHEME
+                      IF_TRACE(,std::shared_ptr<Tracer<Element>> tracer = nullptr)) {
         this->params        = params;
         this->scheme        = scheme;
         this->m_keyGenLevel = 0;
         this->m_schemeId    = schemeId;
+        IF_TRACE(this->m_tracer = tracer ? tracer : std::make_shared<NullTracer<Element>>());
     }
 
     /**
@@ -548,6 +576,7 @@ public:
         scheme        = other.scheme;
         m_keyGenLevel = 0;
         m_schemeId    = other.m_schemeId;
+        IF_TRACE(m_tracer = other.m_tracer);
     }
 
     /**
@@ -560,6 +589,7 @@ public:
         scheme        = rhs.scheme;
         m_keyGenLevel = rhs.m_keyGenLevel;
         m_schemeId    = rhs.m_schemeId;
+        IF_TRACE(m_tracer = rhs.m_tracer);
         return *this;
     }
 
@@ -1248,6 +1278,10 @@ public:
     * @return Encrypted ciphertext (or null on failure).
     */
     Ciphertext<Element> Encrypt(ConstPlaintext& plaintext, const PublicKey<Element>& publicKey) const {
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("Encrypt"));
+        IF_TRACE(t->registerInput(plaintext));
+        IF_TRACE(t->registerInput(publicKey));
+
         if (plaintext == nullptr)
             OPENFHE_THROW("Input plaintext is nullptr");
         ValidateKey(publicKey);
@@ -1263,7 +1297,7 @@ public:
             ciphertext->SetEncodingType(plaintext->GetEncodingType());
         }
 
-        return ciphertext;
+        return REGISTER_IF_TRACE(ciphertext);
     }
 
     /**
@@ -1285,6 +1319,10 @@ public:
     * @return Encrypted ciphertext (or null on failure).
     */
     Ciphertext<Element> Encrypt(ConstPlaintext& plaintext, const PrivateKey<Element>& privateKey) const {
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("Encrypt"));
+        IF_TRACE(t->registerInput(plaintext));
+        IF_TRACE(t->registerInput(privateKey));
+
         //    if (plaintext == nullptr)
         //      OPENFHE_THROW( "Input plaintext is nullptr");
         ValidateKey(privateKey);
@@ -1300,7 +1338,7 @@ public:
             ciphertext->SetEncodingType(plaintext->GetEncodingType());
         }
 
-        return ciphertext;
+        return REGISTER_IF_TRACE(ciphertext);
     }
 
     /**
@@ -1393,7 +1431,8 @@ public:
     */
     Ciphertext<Element> EvalNegate(ConstCiphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
-        return GetScheme()->EvalNegate(ciphertext);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalNegate", {ciphertext}));
+        return REGISTER_IF_TRACE(GetScheme()->EvalNegate(ciphertext));
     }
 
     /**
@@ -1403,7 +1442,9 @@ public:
     */
     void EvalNegateInPlace(Ciphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalNegateInPlace", {ciphertext}));
         GetScheme()->EvalNegateInPlace(ciphertext);
+        IF_TRACE(t->registerOutput(ciphertext));
     }
 
     //------------------------------------------------------------------------------
@@ -1419,7 +1460,8 @@ public:
     */
     Ciphertext<Element> EvalAdd(ConstCiphertext<Element>& ciphertext1, ConstCiphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
-        return GetScheme()->EvalAdd(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAdd", {ciphertext1, ciphertext2}));
+        return REGISTER_IF_TRACE(GetScheme()->EvalAdd(ciphertext1, ciphertext2));
     }
 
     /**
@@ -1430,7 +1472,9 @@ public:
     */
     void EvalAddInPlace(Ciphertext<Element>& ciphertext1, ConstCiphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAddInPlace", {ciphertext1, ciphertext2}));
         GetScheme()->EvalAddInPlace(ciphertext1, ciphertext2);
+        IF_TRACE(t->registerOutput(ciphertext1));
     }
 
     /**
@@ -1442,7 +1486,8 @@ public:
     */
     Ciphertext<Element> EvalAddMutable(Ciphertext<Element>& ciphertext1, Ciphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
-        return GetScheme()->EvalAddMutable(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAddMutable", {ciphertext1, ciphertext2}));
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalAddMutable(ciphertext1, ciphertext2));
     }
 
     /**
@@ -1453,7 +1498,9 @@ public:
     */
     void EvalAddMutableInPlace(Ciphertext<Element>& ciphertext1, Ciphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAddMutableInPlace", {ciphertext1, ciphertext2}));
         GetScheme()->EvalAddMutableInPlace(ciphertext1, ciphertext2);
+        IF_TRACE(t->registerOutput(ciphertext1));
     }
 
     /**
@@ -1466,7 +1513,9 @@ public:
     Ciphertext<Element> EvalAdd(ConstCiphertext<Element>& ciphertext, Plaintext& plaintext) const {
         TypeCheck(ciphertext, plaintext);
         plaintext->SetFormat(EVALUATION);
-        return GetScheme()->EvalAdd(ciphertext, plaintext);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAdd", {ciphertext}));
+        IF_TRACE(t->registerInput(plaintext));
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalAdd(ciphertext, plaintext));
     }
 
     /**
@@ -1489,7 +1538,10 @@ public:
     void EvalAddInPlace(Ciphertext<Element>& ciphertext, Plaintext& plaintext) const {
         TypeCheck(ciphertext, plaintext);
         plaintext->SetFormat(EVALUATION);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAddInPlace", {ciphertext}));
+        IF_TRACE(t->registerInput(plaintext));
         GetScheme()->EvalAddInPlace(ciphertext, plaintext);
+        IF_TRACE(t->registerOutput(ciphertext));
     }
 
     /**
@@ -1512,7 +1564,9 @@ public:
     Ciphertext<Element> EvalAddMutable(Ciphertext<Element>& ciphertext, Plaintext& plaintext) const {
         TypeCheck(ciphertext, plaintext);
         plaintext->SetFormat(EVALUATION);
-        return GetScheme()->EvalAddMutable(ciphertext, plaintext);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAddMutable", {ciphertext}));
+        IF_TRACE(t->registerInput(plaintext));
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalAddMutable(ciphertext, plaintext));
     }
 
     /**
@@ -1554,7 +1608,15 @@ public:
     * @return Resulting ciphertext.
     */
     Ciphertext<Element> EvalAdd(ConstCiphertext<Element>& ciphertext, double scalar) const {
-        return scalar >= 0. ? GetScheme()->EvalAdd(ciphertext, scalar) : GetScheme()->EvalSub(ciphertext, -scalar);
+        if (scalar >= 0.) {
+            IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAdd", {ciphertext}));
+            IF_TRACE(t->registerInput(scalar));
+            return REGISTER_IF_TRACE(GetScheme()->EvalAdd(ciphertext, scalar));
+        } else {
+            IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSub", {ciphertext}));
+            IF_TRACE(t->registerInput(-scalar));
+            return REGISTER_IF_TRACE(GetScheme()->EvalSub(ciphertext, -scalar));
+        }
     }
 
     /**
@@ -1577,12 +1639,17 @@ public:
     void EvalAddInPlace(Ciphertext<Element>& ciphertext, double scalar) const {
         if (scalar == 0.)
             return;
-
         if (scalar > 0.) {
+            IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAddInPlace", {ciphertext}));
+            IF_TRACE(t->registerInput(scalar));
             GetScheme()->EvalAddInPlace(ciphertext, scalar);
+            IF_TRACE(t->registerOutput(ciphertext));
         }
         else {
+            IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSubInPlace", {ciphertext}));
+            IF_TRACE(t->registerInput(scalar));
             GetScheme()->EvalSubInPlace(ciphertext, -scalar);
+            IF_TRACE(t->registerOutput(ciphertext));
         }
     }
 
@@ -1604,7 +1671,10 @@ public:
     * @return Resulting ciphertext.
     */
     Ciphertext<Element> EvalAdd(ConstCiphertext<Element>& ciphertext, std::complex<double> scalar) const {
-        return GetScheme()->EvalAdd(ciphertext, scalar);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAdd", {ciphertext}));
+        IF_TRACE(t->registerInput(static_cast<double>(scalar.real()), "real"));
+        IF_TRACE(t->registerInput(static_cast<double>(scalar.imag()), "imag"));
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalAdd(ciphertext, scalar));
     }
 
     /**
@@ -1627,7 +1697,11 @@ public:
     void EvalAddInPlace(Ciphertext<Element>& ciphertext, std::complex<double> scalar) const {
         if (scalar == std::complex<double>(0.0, 0.0))
             return;
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAddInPlace", {ciphertext}));
+        IF_TRACE(t->registerInput(static_cast<double>(scalar.real()), "real"));
+        IF_TRACE(t->registerInput(static_cast<double>(scalar.imag()), "imag"));
         GetScheme()->EvalAddInPlace(ciphertext, scalar);
+        IF_TRACE(t->registerOutput(ciphertext));
     }
 
     /**
@@ -1653,7 +1727,8 @@ public:
     */
     Ciphertext<Element> EvalSub(ConstCiphertext<Element>& ciphertext1, ConstCiphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
-        return GetScheme()->EvalSub(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSub", {ciphertext1, ciphertext2}));
+        return REGISTER_IF_TRACE(GetScheme()->EvalSub(ciphertext1, ciphertext2));
     }
 
     /**
@@ -1664,7 +1739,9 @@ public:
     */
     void EvalSubInPlace(Ciphertext<Element>& ciphertext1, ConstCiphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSubInPlace", {ciphertext1, ciphertext2}));
         GetScheme()->EvalSubInPlace(ciphertext1, ciphertext2);
+        IF_TRACE(t->registerOutput(ciphertext1));
     }
 
     /**
@@ -1676,7 +1753,8 @@ public:
     */
     Ciphertext<Element> EvalSubMutable(Ciphertext<Element>& ciphertext1, Ciphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
-        return GetScheme()->EvalSubMutable(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSubMutable", {ciphertext1, ciphertext2}));
+        return REGISTER_IF_TRACE(GetScheme()->EvalSubMutable(ciphertext1, ciphertext2));
     }
 
     /**
@@ -1687,7 +1765,9 @@ public:
     */
     void EvalSubMutableInPlace(Ciphertext<Element>& ciphertext1, Ciphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSubMutableInPlace", {ciphertext1, ciphertext2}));
         GetScheme()->EvalSubMutableInPlace(ciphertext1, ciphertext2);
+        IF_TRACE(t->registerOutput(ciphertext1));
     }
 
     /**
@@ -1699,7 +1779,9 @@ public:
     */
     Ciphertext<Element> EvalSub(ConstCiphertext<Element>& ciphertext, Plaintext& plaintext) const {
         TypeCheck(ciphertext, plaintext);
-        return GetScheme()->EvalSub(ciphertext, plaintext);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSub", {ciphertext}));
+        IF_TRACE(t->registerInput(plaintext));
+        return REGISTER_IF_TRACE(GetScheme()->EvalSub(ciphertext, plaintext));
     }
 
     /**
@@ -1722,7 +1804,9 @@ public:
     */
     Ciphertext<Element> EvalSubMutable(Ciphertext<Element>& ciphertext, Plaintext& plaintext) const {
         TypeCheck(ciphertext, plaintext);
-        return GetScheme()->EvalSubMutable(ciphertext, plaintext);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSubMutable", {ciphertext}));
+        IF_TRACE(t->registerInput(plaintext));
+        return REGISTER_IF_TRACE(GetScheme()->EvalSubMutable(ciphertext, plaintext));
     }
 
     /**
@@ -1733,6 +1817,9 @@ public:
     * @return Resulting ciphertext.
     */
     Ciphertext<Element> EvalSubMutable(Plaintext& plaintext, Ciphertext<Element>& ciphertext) const {
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSubMutable"));
+        IF_TRACE(t->registerInput(plaintext));
+        IF_TRACE(t->registerInput(ciphertext));
         Ciphertext<Element> negated = EvalNegate(ciphertext);
         Ciphertext<Element> result  = EvalAddMutable(negated, plaintext);
         ciphertext                  = EvalNegate(negated);
@@ -1746,8 +1833,12 @@ public:
     * @param scalar      Real number to subtract.
     * @return Resulting ciphertext (ciphertext - scalar).
     */
-    Ciphertext<Element> EvalSub(ConstCiphertext<Element>& ciphertext, double scalar) const {
-        return scalar >= 0 ? GetScheme()->EvalSub(ciphertext, scalar) : GetScheme()->EvalAdd(ciphertext, -scalar);
+    Ciphertext<Element> EvalSub(ConstCiphertext<Element> ciphertext, double constant) const {
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSub", {ciphertext}));
+        IF_TRACE(t->registerInput(constant));
+        Ciphertext<Element> result =
+            constant >= 0 ? GetScheme()->EvalSub(ciphertext, constant) : GetScheme()->EvalAdd(ciphertext, -constant);
+        return REGISTER_IF_TRACE(t, result);
     }
 
     /**
@@ -1757,7 +1848,10 @@ public:
     * @param ciphertext  Ciphertext to subtract.
     * @return Resulting ciphertext (scalar - ciphertext).
     */
-    Ciphertext<Element> EvalSub(double scalar, ConstCiphertext<Element>& ciphertext) const {
+    Ciphertext<Element> EvalSub(double scalar, ConstCiphertext<Element> ciphertext) const {
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSub"));
+        IF_TRACE(t->registerInput(scalar));
+        IF_TRACE(t->registerInput(ciphertext));
         return EvalAdd(EvalNegate(ciphertext), scalar);
     }
 
@@ -1768,10 +1862,18 @@ public:
     * @param scalar      Real number to subtract.
     */
     void EvalSubInPlace(Ciphertext<Element>& ciphertext, double scalar) const {
-        if (scalar >= 0.)
+        if (scalar >= 0) {
+            IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSubInPlace", {ciphertext}));
+            IF_TRACE(t->registerInput(scalar));
             GetScheme()->EvalSubInPlace(ciphertext, scalar);
-        else
+            IF_TRACE(t->registerOutput(ciphertext));
+        }
+        else {
+            IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSubInPlace", {ciphertext}));
+            IF_TRACE(t->registerInput(scalar));
             GetScheme()->EvalAddInPlace(ciphertext, -scalar);
+            IF_TRACE(t->registerOutput(ciphertext));
+        }
     }
 
     /**
@@ -1793,7 +1895,10 @@ public:
     * @return Resulting ciphertext (ciphertext - scalar).
     */
     Ciphertext<Element> EvalSub(ConstCiphertext<Element>& ciphertext, std::complex<double> scalar) const {
-        return GetScheme()->EvalAdd(ciphertext, -scalar);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSub"));
+        IF_TRACE(t->registerInput(scalar));
+        IF_TRACE(t->registerInput(ciphertext));
+        return REGISTER_IF_TRACE(GetScheme()->EvalAdd(ciphertext, -scalar));
     }
 
     /**
@@ -1816,7 +1921,11 @@ public:
     void EvalSubInPlace(Ciphertext<Element>& ciphertext, std::complex<double> scalar) const {
         if (scalar == std::complex<double>(0.0, 0.0))
             return;
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSubInPlace"));
+        IF_TRACE(t->registerInput(scalar));
+        IF_TRACE(t->registerInput(ciphertext));
         GetScheme()->EvalAddInPlace(ciphertext, -scalar);
+        IF_TRACE(t->registerOutput(ciphertext));
     }
 
     /**
@@ -1882,12 +1991,13 @@ public:
     */
     Ciphertext<Element> EvalMult(ConstCiphertext<Element>& ciphertext1, ConstCiphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalMult", {ciphertext1, ciphertext2}));
 
         const auto& evalKeyVec = CryptoContextImpl<Element>::GetEvalMultKeyVector(ciphertext1->GetKeyTag());
         if (!evalKeyVec.size())
             OPENFHE_THROW("Evaluation key has not been generated for EvalMult");
 
-        return GetScheme()->EvalMult(ciphertext1, ciphertext2, evalKeyVec[0]);
+        return REGISTER_IF_TRACE(GetScheme()->EvalMult(ciphertext1, ciphertext2, evalKeyVec[0]));
     }
 
     /**
@@ -1899,12 +2009,13 @@ public:
     */
     Ciphertext<Element> EvalMultMutable(Ciphertext<Element>& ciphertext1, Ciphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalMultMutable", {ciphertext1, ciphertext2}));
 
         const auto& evalKeyVec = CryptoContextImpl<Element>::GetEvalMultKeyVector(ciphertext1->GetKeyTag());
         if (!evalKeyVec.size())
             OPENFHE_THROW("Evaluation key has not been generated for EvalMultMutable");
 
-        return GetScheme()->EvalMultMutable(ciphertext1, ciphertext2, evalKeyVec[0]);
+        return REGISTER_IF_TRACE(GetScheme()->EvalMultMutable(ciphertext1, ciphertext2, evalKeyVec[0]));
     }
 
     /**
@@ -1915,12 +2026,14 @@ public:
     */
     void EvalMultMutableInPlace(Ciphertext<Element>& ciphertext1, Ciphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalMultMutableInPlace", {ciphertext1, ciphertext2}));
 
         const auto& evalKeyVec = CryptoContextImpl<Element>::GetEvalMultKeyVector(ciphertext1->GetKeyTag());
         if (!evalKeyVec.size())
             OPENFHE_THROW("Evaluation key has not been generated for EvalMultMutableInPlace");
 
         GetScheme()->EvalMultMutableInPlace(ciphertext1, ciphertext2, evalKeyVec[0]);
+        IF_TRACE(t->registerOutput(ciphertext1));
     }
 
     /**
@@ -1931,12 +2044,13 @@ public:
     */
     Ciphertext<Element> EvalSquare(ConstCiphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSquare", {ciphertext}));
 
         const auto& evalKeyVec = CryptoContextImpl<Element>::GetEvalMultKeyVector(ciphertext->GetKeyTag());
         if (!evalKeyVec.size())
             OPENFHE_THROW("Evaluation key has not been generated for EvalSquare");
 
-        return GetScheme()->EvalSquare(ciphertext, evalKeyVec[0]);
+        return REGISTER_IF_TRACE(GetScheme()->EvalSquare(ciphertext, evalKeyVec[0]));
     }
 
     /**
@@ -1947,12 +2061,13 @@ public:
     */
     Ciphertext<Element> EvalSquareMutable(Ciphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSquareMutable", {ciphertext}));
 
         const auto& evalKeyVec = CryptoContextImpl<Element>::GetEvalMultKeyVector(ciphertext->GetKeyTag());
         if (!evalKeyVec.size())
             OPENFHE_THROW("Evaluation key has not been generated for EvalSquareMutable");
 
-        return GetScheme()->EvalSquareMutable(ciphertext, evalKeyVec[0]);
+        return REGISTER_IF_TRACE(GetScheme()->EvalSquareMutable(ciphertext, evalKeyVec[0]));
     }
 
     /**
@@ -1962,12 +2077,14 @@ public:
     */
     void EvalSquareInPlace(Ciphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalSquareInPlace", {ciphertext}));
 
         const auto& evalKeyVec = CryptoContextImpl<Element>::GetEvalMultKeyVector(ciphertext->GetKeyTag());
         if (!evalKeyVec.size())
             OPENFHE_THROW("Evaluation key has not been generated for EvalSquareInPlace");
 
         GetScheme()->EvalSquareInPlace(ciphertext, evalKeyVec[0]);
+        IF_TRACE(t->registerOutput(ciphertext));
     }
 
     /**
@@ -1980,8 +2097,9 @@ public:
     Ciphertext<Element> EvalMultNoRelin(ConstCiphertext<Element>& ciphertext1,
                                         ConstCiphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalMultNoRelin", {ciphertext1, ciphertext2}));
 
-        return GetScheme()->EvalMult(ciphertext1, ciphertext2);
+        return REGISTER_IF_TRACE(GetScheme()->EvalMult(ciphertext1, ciphertext2));
     }
 
     /**
@@ -1994,13 +2112,14 @@ public:
         // input parameter check
         if (!ciphertext)
             OPENFHE_THROW("Input ciphertext is nullptr");
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("Relinearize", {ciphertext}));
 
         const auto& evalKeyVec = CryptoContextImpl<Element>::GetEvalMultKeyVector(ciphertext->GetKeyTag());
 
         if (evalKeyVec.size() < (ciphertext->NumberCiphertextElements() - 2))
             OPENFHE_THROW("Insufficient value was used for maxRelinSkDeg to generate keys for Relinearize");
 
-        return GetScheme()->Relinearize(ciphertext, evalKeyVec);
+        return REGISTER_IF_TRACE(GetScheme()->Relinearize(ciphertext, evalKeyVec));
     }
 
     /**
@@ -2012,12 +2131,14 @@ public:
         // input parameter check
         if (!ciphertext)
             OPENFHE_THROW("Input ciphertext is nullptr");
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("RelinearizeInPlace", {ciphertext}));
 
         const auto& evalKeyVec = CryptoContextImpl<Element>::GetEvalMultKeyVector(ciphertext->GetKeyTag());
         if (evalKeyVec.size() < (ciphertext->NumberCiphertextElements() - 2))
             OPENFHE_THROW("Insufficient value was used for maxRelinSkDeg to generate keys for RelinearizeInPlace");
 
         GetScheme()->RelinearizeInPlace(ciphertext, evalKeyVec);
+        IF_TRACE(t->registerOutput(ciphertext));
     }
 
     /**
@@ -2031,6 +2152,7 @@ public:
                                                ConstCiphertext<Element>& ciphertext2) const {
         if (!ciphertext1 || !ciphertext2)
             OPENFHE_THROW("Input ciphertext is nullptr");
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalMultAndRelinearize", {ciphertext1, ciphertext2}));
 
         const auto& evalKeyVec = CryptoContextImpl<Element>::GetEvalMultKeyVector(ciphertext1->GetKeyTag());
 
@@ -2039,7 +2161,7 @@ public:
             OPENFHE_THROW("Insufficient value was used for maxRelinSkDeg to generate keys for EvalMultAndRelinearize");
         }
 
-        return GetScheme()->EvalMultAndRelinearize(ciphertext1, ciphertext2, evalKeyVec);
+        return REGISTER_IF_TRACE(GetScheme()->EvalMultAndRelinearize(ciphertext1, ciphertext2, evalKeyVec));
     }
 
     /**
@@ -2051,7 +2173,9 @@ public:
     */
     Ciphertext<Element> EvalMult(ConstCiphertext<Element>& ciphertext, ConstPlaintext& plaintext) const {
         TypeCheck(ciphertext, plaintext);
-        return GetScheme()->EvalMult(ciphertext, plaintext);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalMult", {ciphertext}));
+        IF_TRACE(t->registerInput(plaintext));
+        return REGISTER_IF_TRACE(GetScheme()->EvalMult(ciphertext, plaintext));
     }
 
     /**
@@ -2074,7 +2198,9 @@ public:
     */
     Ciphertext<Element> EvalMultMutable(Ciphertext<Element>& ciphertext, Plaintext& plaintext) const {
         TypeCheck(ciphertext, plaintext);
-        return GetScheme()->EvalMultMutable(ciphertext, plaintext);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalMultMutable", {ciphertext}));
+        IF_TRACE(t->registerInput(plaintext));
+        return REGISTER_IF_TRACE(GetScheme()->EvalMultMutable(ciphertext, plaintext));
     }
 
     /**
@@ -2125,7 +2251,10 @@ public:
     Ciphertext<Element> EvalMult(ConstCiphertext<Element>& ciphertext, double scalar) const {
         if (!ciphertext)
             OPENFHE_THROW("Input ciphertext is nullptr");
-        return GetScheme()->EvalMult(ciphertext, scalar);
+
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalMult", {ciphertext}));
+        IF_TRACE(t->registerInput(scalar));
+        return REGISTER_IF_TRACE(GetScheme()->EvalMult(ciphertext, scalar));
     }
 
     /**
@@ -2171,7 +2300,10 @@ public:
     Ciphertext<Element> EvalMult(ConstCiphertext<Element>& ciphertext, std::complex<double> scalar) const {
         if (!ciphertext)
             OPENFHE_THROW("Input ciphertext is nullptr");
-        return GetScheme()->EvalMult(ciphertext, scalar);
+
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalMult", {ciphertext}));
+        IF_TRACE(t->registerInput(scalar));
+        return REGISTER_IF_TRACE(GetScheme()->EvalMult(ciphertext, scalar));
     }
 
     /**
@@ -2309,9 +2441,10 @@ public:
     */
     Ciphertext<Element> EvalRotate(ConstCiphertext<Element>& ciphertext, int32_t index) const {
         ValidateCiphertext(ciphertext);
-
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalRotate", {ciphertext}));
+        IF_TRACE(t->registerInput(index, "index"));
         auto evalKeyMap = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ciphertext->GetKeyTag());
-        return GetScheme()->EvalAtIndex(ciphertext, index, evalKeyMap);
+        return REGISTER_IF_TRACE(GetScheme()->EvalAtIndex(ciphertext, index, evalKeyMap));
     }
 
     /**
@@ -2483,12 +2616,13 @@ public:
                                          ConstCiphertext<Element>& ciphertext2) const {
         ValidateCiphertext(ciphertext1);
         ValidateCiphertext(ciphertext2);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("ComposedEvalMult", {ciphertext1, ciphertext2}));
 
         auto evalKeyVec = CryptoContextImpl<Element>::GetEvalMultKeyVector(ciphertext1->GetKeyTag());
         if (!evalKeyVec.size())
             OPENFHE_THROW("Evaluation key has not been generated for EvalMult");
 
-        return GetScheme()->ComposedEvalMult(ciphertext1, ciphertext2, evalKeyVec[0]);
+        return REGISTER_IF_TRACE(GetScheme()->ComposedEvalMult(ciphertext1, ciphertext2, evalKeyVec[0]));
     }
 
     /**
@@ -2499,7 +2633,8 @@ public:
     */
     Ciphertext<Element> Rescale(ConstCiphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
-        return GetScheme()->ModReduce(ciphertext, GetCompositeDegreeFromCtxt());
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("Rescale", {ciphertext}));
+        return REGISTER_IF_TRACE(GetScheme()->ModReduce(ciphertext, BASE_NUM_LEVELS_TO_DROP));
     }
 
     /**
@@ -2509,7 +2644,9 @@ public:
     */
     void RescaleInPlace(Ciphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
-        GetScheme()->ModReduceInPlace(ciphertext, GetCompositeDegreeFromCtxt());
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("RescaleInPlace", {ciphertext}));
+        GetScheme()->ModReduceInPlace(ciphertext, BASE_NUM_LEVELS_TO_DROP);
+        IF_TRACE(t->registerOutput(ciphertext));
     }
 
     /**
@@ -2520,7 +2657,8 @@ public:
     */
     Ciphertext<Element> ModReduce(ConstCiphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
-        return GetScheme()->ModReduce(ciphertext, GetCompositeDegreeFromCtxt());
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("ModReduce", {ciphertext}));
+        return REGISTER_IF_TRACE(GetScheme()->ModReduce(ciphertext, BASE_NUM_LEVELS_TO_DROP));
     }
 
     /**
@@ -2530,7 +2668,9 @@ public:
     */
     void ModReduceInPlace(Ciphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
-        GetScheme()->ModReduceInPlace(ciphertext, GetCompositeDegreeFromCtxt());
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("ModReduceInPlace", {ciphertext}));
+        GetScheme()->ModReduceInPlace(ciphertext, BASE_NUM_LEVELS_TO_DROP);
+        IF_TRACE(t->registerOutput(ciphertext));
     }
 
     /**
@@ -2546,7 +2686,9 @@ public:
     Ciphertext<Element> LevelReduce(ConstCiphertext<Element>& ciphertext, const EvalKey<Element> evalKey,
                                     size_t levels = 1) const {
         ValidateCiphertext(ciphertext);
-        return GetScheme()->LevelReduce(ciphertext, evalKey, levels * GetCompositeDegreeFromCtxt());
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("LevelReduce", {ciphertext}));
+        IF_TRACE(t->registerInput(static_cast<size_t>(levels), "levels"));
+        return REGISTER_IF_TRACE(GetScheme()->LevelReduce(ciphertext, evalKey, levels));
     }
 
     /**
@@ -2562,7 +2704,11 @@ public:
         ValidateCiphertext(ciphertext);
         if (levels <= 0)
             return;
-        GetScheme()->LevelReduceInPlace(ciphertext, evalKey, levels * GetCompositeDegreeFromCtxt());
+
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("LevelReduceInPlace", {ciphertext}));
+        IF_TRACE(t->registerInput(static_cast<size_t>(levels), "levels"));
+        GetScheme()->LevelReduceInPlace(ciphertext, evalKey, levels);
+        IF_TRACE(t->registerOutput(ciphertext));
     }
 
     /**
@@ -2575,7 +2721,9 @@ public:
     Ciphertext<Element> Compress(ConstCiphertext<Element>& ciphertext, uint32_t towersLeft = 1) const {
         if (ciphertext == nullptr)
             OPENFHE_THROW("input ciphertext is invalid (has no data)");
-        return GetScheme()->Compress(ciphertext, towersLeft);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("Compress", {ciphertext}));
+        IF_TRACE(t->registerInput(static_cast<size_t>(towersLeft), "towersLeft"));
+        return REGISTER_IF_TRACE(GetScheme()->Compress(ciphertext, towersLeft));
     }
 
     //------------------------------------------------------------------------------
@@ -2591,9 +2739,13 @@ public:
     Ciphertext<Element> EvalAddMany(const std::vector<Ciphertext<Element>>& ciphertextVec) const {
         if (!ciphertextVec.size())
             OPENFHE_THROW("Empty input ciphertext vector");
-        if (ciphertextVec.size() == 1)
-            return ciphertextVec[0];
-        return GetScheme()->EvalAddMany(ciphertextVec);
+
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAddMany"));
+        IF_TRACE(for (const auto& ct : ciphertextVec) t->registerInput(ct));
+        if (ciphertextVec.size() == 1) 
+            return REGISTER_IF_TRACE(t, ciphertextVec[0]);
+        
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalAddMany(ciphertextVec));
     }
 
     /**
@@ -2605,7 +2757,11 @@ public:
     Ciphertext<Element> EvalAddManyInPlace(std::vector<Ciphertext<Element>>& ciphertextVec) const {
         if (!ciphertextVec.size())
             OPENFHE_THROW("Empty input ciphertext vector");
-        return GetScheme()->EvalAddManyInPlace(ciphertextVec);
+        IF_TRACE(auto t = m_tracer->TraceCryptoContextEvalFunc("EvalAddManyInPlace"));
+        IF_TRACE(for (const auto& ct : ciphertextVec) t->registerInput(ct));
+        auto result = GetScheme()->EvalAddManyInPlace(ciphertextVec);
+        IF_TRACE(t->registerOutput(result));
+        return result;
     }
 
     /**
