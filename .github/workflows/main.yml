@@ -15,6 +15,7 @@ jobs:
       mb2_jobs: "all"
       mb4_jobs: "all"
       mb6_jobs: "all"
+      enable_tracer: "OFF"
       # cmake_args_map holds job specific additional cmake options. compiler flags, native_backend flag and
       # OpenMP flag are set in generic_workflow.yml
       cmake_args_map: '{
@@ -40,6 +41,7 @@ jobs:
       mb2_jobs: "all"
       mb4_jobs: "all"
       mb6_jobs: "all"
+      enable_tracer: "OFF"
       # cmake_args_map holds job specific additional cmake options. compiler flags, native_backend flag and
       # OpenMP flag are set in generic_workflow.yml
       cmake_args_map: '{
