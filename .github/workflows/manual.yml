@@ -103,7 +103,7 @@ on:
 
 jobs:
   call:
-    uses: openfheorg/openfhe-development/.github/workflows/generic_workflow.yml@github-ci
+    uses: ./.github/workflows/generic_workflow.yml
     with:
       runner: ${{ vars.RUNNER }}
       compiler: "${{ inputs.compiler }}"
