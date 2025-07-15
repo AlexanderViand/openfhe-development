@@ -386,7 +386,7 @@ void LeveledSHERNS::LevelReduceInPlace(Ciphertext<DCRTPoly>& ciphertext, const E
  * must be a multiple of composite degree.
  */
 Ciphertext<DCRTPoly> LeveledSHERNS::Compress(ConstCiphertext<DCRTPoly> ciphertext, size_t towersLeft) const {
-    Ciphertext<DCRTPoly> result = std::make_shared<CiphertextImpl<DCRTPoly>>(*ciphertext);
+    Ciphertext<DCRTPoly> result = shared_ptr::make_shared<CiphertextImpl<DCRTPoly>>(*ciphertext);
     const auto cryptoParams     = std::dynamic_pointer_cast<CryptoParametersRNS>(ciphertext->GetCryptoParameters());
 
     usint levelsToDrop = BASE_NUM_LEVELS_TO_DROP;

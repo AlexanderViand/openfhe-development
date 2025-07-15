@@ -7,7 +7,7 @@ on:
 
 jobs:
   call_with_gcc:
-    uses: openfheorg/openfhe-development/.github/workflows/generic_workflow.yml@github-ci
+    uses: ./.github/workflows/generic_workflow.yml
     with:
       runner: ${{ vars.RUNNER }}
       compiler: "GCC-11"
@@ -15,6 +15,7 @@ jobs:
       mb2_jobs: "all"
       mb4_jobs: "all"
       mb6_jobs: "all"
+      enable_tracer: "OFF"
       # cmake_args_map holds job specific additional cmake options. compiler flags, native_backend flag and
       # OpenMP flag are set in generic_workflow.yml
       cmake_args_map: '{
@@ -32,7 +33,7 @@ jobs:
 
   call_with_clang:
     needs: call_with_gcc
-    uses: openfheorg/openfhe-development/.github/workflows/generic_workflow.yml@github-ci
+    uses: ./.github/workflows/generic_workflow.yml
     with:
       runner: ${{ vars.RUNNER }}
       compiler: "CLANG-14"
@@ -40,6 +41,7 @@ jobs:
       mb2_jobs: "all"
       mb4_jobs: "all"
       mb6_jobs: "all"
+      enable_tracer: "OFF"
       # cmake_args_map holds job specific additional cmake options. compiler flags, native_backend flag and
       # OpenMP flag are set in generic_workflow.yml
       cmake_args_map: '{

@@ -142,7 +142,7 @@ template <class Element>
 EvalKey<Element> LeveledSHEBase<Element>::EvalMultKeyGen(const PrivateKey<Element> privateKey) const {
     const auto cc = privateKey->GetCryptoContext();
 
-    PrivateKey<Element> privateKeySquared = std::make_shared<PrivateKeyImpl<Element>>(cc);
+    PrivateKey<Element> privateKeySquared = shared_ptr::make_shared<PrivateKeyImpl<Element>>(cc);
 
     const Element& s = privateKey->GetPrivateElement();
 
@@ -159,7 +159,7 @@ std::vector<EvalKey<Element>> LeveledSHEBase<Element>::EvalMultKeysGen(const Pri
     const auto cc           = privateKey->GetCryptoContext();
     const auto cryptoParams = privateKey->GetCryptoParameters();
 
-    PrivateKey<Element> privateKeyPower = std::make_shared<PrivateKeyImpl<Element>>(cc);
+    PrivateKey<Element> privateKeyPower = shared_ptr::make_shared<PrivateKeyImpl<Element>>(cc);
 
     const Element& s = privateKey->GetPrivateElement();
 
@@ -411,7 +411,7 @@ std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> LeveledSHEBase<Element>::E
     size_t sz = indexList.size();
 #pragma omp parallel for if (sz >= 4)
     for (size_t i = 0; i < sz; ++i) {
-        PrivateKey<Element> privateKeyPermuted = std::make_shared<PrivateKeyImpl<Element>>(cc);
+        PrivateKey<Element> privateKeyPermuted = shared_ptr::make_shared<PrivateKeyImpl<Element>>(cc);
 
         uint32_t index = NativeInteger(indexList[i]).ModInverse(2 * N).ConvertToInt();
         std::vector<uint32_t> vec(N);

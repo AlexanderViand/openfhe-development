@@ -168,8 +168,8 @@ Plaintext SWITCHCKKSRNS::MakeAuxPlaintext(const CryptoContextImpl<DCRTPoly>& cc,
 
     double scFact = cryptoParams->GetScalingFactorReal(level);
 
-    Plaintext p = Plaintext(std::make_shared<CKKSPackedEncoding>(params, cc.GetEncodingParams(), value, noiseScaleDeg,
-                                                                 level, scFact, slots, COMPLEX));
+    Plaintext p = Plaintext(shared_ptr::make_shared<CKKSPackedEncoding>(params, cc.GetEncodingParams(), value,
+                                                                        noiseScaleDeg, level, scFact, slots, COMPLEX));
 
     DCRTPoly& plainElement = p->GetElement<DCRTPoly>();
 
@@ -315,8 +315,8 @@ Plaintext SWITCHCKKSRNS::MakeAuxPlaintext(const CryptoContextImpl<DCRTPoly>& cc,
 
     double scFact = cryptoParams->GetScalingFactorReal(level);
 
-    Plaintext p = Plaintext(std::make_shared<CKKSPackedEncoding>(params, cc.GetEncodingParams(), value, noiseScaleDeg,
-                                                                 level, scFact, slots, COMPLEX));
+    Plaintext p = Plaintext(shared_ptr::make_shared<CKKSPackedEncoding>(params, cc.GetEncodingParams(), value,
+                                                                        noiseScaleDeg, level, scFact, slots, COMPLEX));
 
     DCRTPoly& plainElement = p->GetElement<DCRTPoly>();
 
@@ -511,7 +511,7 @@ EvalKey<DCRTPoly> SWITCHCKKSRNS::ConjugateKeyGen(const PrivateKey<DCRTPoly> priv
     const DCRTPoly& s = privateKey->GetPrivateElement();
     usint N           = s.GetRingDimension();
 
-    PrivateKey<DCRTPoly> privateKeyPermuted = std::make_shared<PrivateKeyImpl<DCRTPoly>>(cc);
+    PrivateKey<DCRTPoly> privateKeyPermuted = shared_ptr::make_shared<PrivateKeyImpl<DCRTPoly>>(cc);
 
     usint index = 2 * N - 1;
     std::vector<usint> vec(N);

@@ -35,7 +35,7 @@
 #ifndef __PRIVATEKEY_FWD_H__
 #define __PRIVATEKEY_FWD_H__
 
-#include <memory>
+#include "shared-ptr.h"
 
 namespace lbcrypto {
 
@@ -43,7 +43,7 @@ template <typename Element>
 class PrivateKeyImpl;
 
 template <typename Element>
-using PrivateKey = std::shared_ptr<PrivateKeyImpl<Element>>;
+using PrivateKey = SharedPtr<PrivateKeyImpl<Element>>;
 
 }  // namespace lbcrypto
 

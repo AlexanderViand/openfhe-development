@@ -41,8 +41,8 @@ namespace lbcrypto {
 // makeSparse is not used by this scheme
 template <class Element>
 KeyPair<Element> PKEBase<Element>::KeyGenInternal(CryptoContext<Element> cc, bool makeSparse) const {
-    KeyPair<Element> keyPair(std::make_shared<PublicKeyImpl<Element>>(cc),
-                             std::make_shared<PrivateKeyImpl<Element>>(cc));
+    KeyPair<Element> keyPair(shared_ptr::make_shared<PublicKeyImpl<Element>>(cc),
+                             shared_ptr::make_shared<PrivateKeyImpl<Element>>(cc));
 
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRLWE<Element>>(cc->GetCryptoParameters());
 
@@ -96,7 +96,7 @@ KeyPair<Element> PKEBase<Element>::KeyGenInternal(CryptoContext<Element> cc, boo
 
 template <class Element>
 Ciphertext<Element> PKEBase<Element>::Encrypt(Element plaintext, const PrivateKey<Element> privateKey) const {
-    Ciphertext<Element> ciphertext           = std::make_shared<CiphertextImpl<Element>>(privateKey);
+    Ciphertext<Element> ciphertext           = shared_ptr::make_shared<CiphertextImpl<Element>>(privateKey);
     std::shared_ptr<std::vector<Element>> ba = EncryptZeroCore(privateKey, nullptr);
     (*ba)[0] += plaintext;
 
@@ -108,7 +108,7 @@ Ciphertext<Element> PKEBase<Element>::Encrypt(Element plaintext, const PrivateKe
 
 template <class Element>
 Ciphertext<Element> PKEBase<Element>::Encrypt(Element plaintext, const PublicKey<Element> publicKey) const {
-    Ciphertext<Element> ciphertext           = std::make_shared<CiphertextImpl<Element>>(publicKey);
+    Ciphertext<Element> ciphertext           = shared_ptr::make_shared<CiphertextImpl<Element>>(publicKey);
     std::shared_ptr<std::vector<Element>> ba = EncryptZeroCore(publicKey, nullptr);
 
     (*ba)[0] += plaintext;

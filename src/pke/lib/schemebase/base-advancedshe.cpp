@@ -89,7 +89,7 @@ Ciphertext<Element> AdvancedSHEBase<Element>::EvalAddManyInPlace(
         }
     }
 
-    Ciphertext<Element> result(std::make_shared<CiphertextImpl<Element>>(*(ciphertextVec[0])));
+    Ciphertext<Element> result(shared_ptr::make_shared<CiphertextImpl<Element>>(*(ciphertextVec[0])));
 
     return result;
 }
@@ -385,7 +385,7 @@ Ciphertext<Element> AdvancedSHEBase<Element>::EvalMerge(const std::vector<Cipher
         OPENFHE_THROW("the vector of ciphertexts to be merged cannot be empty");
 
     const std::shared_ptr<CryptoParametersBase<Element>> cryptoParams = ciphertextVec[0]->GetCryptoParameters();
-    Ciphertext<Element> ciphertextMerged(std::make_shared<CiphertextImpl<Element>>(*(ciphertextVec[0])));
+    Ciphertext<Element> ciphertextMerged(shared_ptr::make_shared<CiphertextImpl<Element>>(*(ciphertextVec[0])));
 
     auto cc = ciphertextVec[0]->GetCryptoContext();
 
@@ -506,7 +506,7 @@ template <class Element>
 Ciphertext<Element> AdvancedSHEBase<Element>::EvalSum_2n(ConstCiphertext<Element> ciphertext, uint32_t batchSize,
                                                          uint32_t m,
                                                          const std::map<uint32_t, EvalKey<Element>>& evalKeys) const {
-    Ciphertext<Element> newCiphertext(std::make_shared<CiphertextImpl<Element>>(*ciphertext));
+    Ciphertext<Element> newCiphertext(shared_ptr::make_shared<CiphertextImpl<Element>>(*ciphertext));
     auto algo = ciphertext->GetCryptoContext()->GetScheme();
 
     if (batchSize > 1) {
@@ -528,7 +528,7 @@ template <class Element>
 Ciphertext<Element> AdvancedSHEBase<Element>::EvalSum2nComplex(
     ConstCiphertext<Element> ciphertext, usint batchSize, usint m,
     const std::map<usint, EvalKey<Element>>& evalKeys) const {
-    Ciphertext<Element> newCiphertext(std::make_shared<CiphertextImpl<Element>>(*ciphertext));
+    Ciphertext<Element> newCiphertext(shared_ptr::make_shared<CiphertextImpl<Element>>(*ciphertext));
 
     uint32_t g = 5;
     auto algo  = ciphertext->GetCryptoContext()->GetScheme();
@@ -545,7 +545,7 @@ template <class Element>
 Ciphertext<Element> AdvancedSHEBase<Element>::EvalSum2nComplexRows(
     ConstCiphertext<Element> ciphertext, usint rowSize, usint m,
     const std::map<usint, EvalKey<Element>>& evalKeys) const {
-    Ciphertext<Element> newCiphertext(std::make_shared<CiphertextImpl<Element>>(*ciphertext));
+    Ciphertext<Element> newCiphertext(shared_ptr::make_shared<CiphertextImpl<Element>>(*ciphertext));
 
     uint32_t colSize = m / (4 * rowSize);
     uint32_t g       = (NativeInteger(5).ModExp(rowSize, m)).ConvertToInt<uint32_t>();
@@ -563,7 +563,7 @@ template <class Element>
 Ciphertext<Element> AdvancedSHEBase<Element>::EvalSum2nComplexCols(
     ConstCiphertext<Element> ciphertext, usint batchSize, usint m,
     const std::map<usint, EvalKey<Element>>& evalKeys) const {
-    Ciphertext<Element> newCiphertext(std::make_shared<CiphertextImpl<Element>>(*ciphertext));
+    Ciphertext<Element> newCiphertext(shared_ptr::make_shared<CiphertextImpl<Element>>(*ciphertext));
 
     uint32_t g = NativeInteger(5).ModInverse(m).ConvertToInt<uint32_t>();
     auto algo  = ciphertext->GetCryptoContext()->GetScheme();

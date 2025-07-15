@@ -960,7 +960,7 @@ Ciphertext<DCRTPoly> LeveledSHEBFVRNS::Compress(ConstCiphertext<DCRTPoly> cipher
             "BFV Compress is not currently supported for the EXTENDED encryption method. Use the STANDARD encryption method instead.");
     }
 
-    Ciphertext<DCRTPoly> result = std::make_shared<CiphertextImpl<DCRTPoly>>(*ciphertext);
+    Ciphertext<DCRTPoly> result = shared_ptr::make_shared<CiphertextImpl<DCRTPoly>>(*ciphertext);
 
     std::vector<DCRTPoly>& cv = result->GetElements();
 

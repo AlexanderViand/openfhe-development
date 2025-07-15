@@ -49,8 +49,8 @@ KeyPair<Element> MultipartyBase<Element>::MultipartyKeyGen(CryptoContext<Element
                                                            bool makeSparse) {
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRLWE<Element>>(cc->GetCryptoParameters());
 
-    KeyPair<Element> keyPair(std::make_shared<PublicKeyImpl<Element>>(cc),
-                             std::make_shared<PrivateKeyImpl<Element>>(cc));
+    KeyPair<Element> keyPair(shared_ptr::make_shared<PublicKeyImpl<Element>>(cc),
+                             shared_ptr::make_shared<PrivateKeyImpl<Element>>(cc));
 
     const std::shared_ptr<ParmType> elementParams = cryptoParams->GetElementParams();
     const auto ns                                 = cryptoParams->GetNoiseScale();
@@ -84,8 +84,8 @@ KeyPair<Element> MultipartyBase<Element>::MultipartyKeyGen(CryptoContext<Element
                                                            bool fresh) {
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRLWE<Element>>(cc->GetCryptoParameters());
 
-    KeyPair<Element> keyPair(std::make_shared<PublicKeyImpl<Element>>(cc),
-                             std::make_shared<PrivateKeyImpl<Element>>(cc));
+    KeyPair<Element> keyPair(shared_ptr::make_shared<PublicKeyImpl<Element>>(cc),
+                             shared_ptr::make_shared<PrivateKeyImpl<Element>>(cc));
 
     const std::shared_ptr<ParmType> elementParams = cryptoParams->GetElementParams();
     const std::shared_ptr<ParmType> paramsPK      = cryptoParams->GetParamsPK();
@@ -153,7 +153,7 @@ std::shared_ptr<std::map<usint, EvalKey<Element>>> MultipartyBase<Element>::Mult
 
     // #pragma omp parallel for if (indexList.size() >= 4)
     for (usint i = 0; i < indexList.size(); i++) {
-        PrivateKey<Element> privateKeyPermuted = std::make_shared<PrivateKeyImpl<Element>>(cc);
+        PrivateKey<Element> privateKeyPermuted = shared_ptr::make_shared<PrivateKeyImpl<Element>>(cc);
 
         usint index = NativeInteger(indexList[i]).ModInverse(2 * N).ConvertToInt();
         std::vector<usint> vec(N);
@@ -289,7 +289,7 @@ DecryptResult MultipartyBase<Element>::MultipartyDecryptFusion(const std::vector
 template <class Element>
 PublicKey<Element> MultipartyBase<Element>::MultiAddPubKeys(PublicKey<Element> publicKey1,
                                                             PublicKey<Element> publicKey2) const {
-    PublicKey<Element> publicKeySum = std::make_shared<PublicKeyImpl<Element>>(publicKey1->GetCryptoContext());
+    PublicKey<Element> publicKeySum = shared_ptr::make_shared<PublicKeyImpl<Element>>(publicKey1->GetCryptoContext());
 
     const Element& b1 = publicKey1->GetPublicElements()[0];
     const Element& b2 = publicKey2->GetPublicElements()[0];
