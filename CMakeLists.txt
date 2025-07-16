@@ -598,6 +598,25 @@ if(WITH_TCM)
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/third-party/include DESTINATION include/openfhe/third-party/)
 endif()
 
+if(ENABLE_TRACER_SUPPORT)
+    include(FetchContent)
+    # FIXME: This is a temporary solution to include HERACLES_DATA_FORMATS directly in an OpenFHE fork
+    # the "correct" long-term solution is to add some flags/logic to accept an externally defined tracer
+    # in a more general way, and to have an out-of-tree project that depends on OpenFHE pass that in
+    message( STATUS "Fetching HERACLES_DATA_FORMATS")
+    FetchContent_Declare(
+        HERACLES_DATA_FORMATS
+        GIT_REPOSITORY https://github.com/IntelLabs/encrypted-computing-sdk.git
+        GIT_TAG 7b3aa0c1f7e98955ec80dfb75bd3559b46aae8c2 # HEAD of aviand/data-formats branch as of 2025-07-16
+        SOURCE_SUBDIR tracing/data-formats
+    )
+    FetchContent_MakeAvailable(HERACLES_DATA_FORMATS)
+    # Add include directories for HERACLES_DATA_FORMATS. 
+    # Not the most elegant solution, but good enough until this gets refactored into an external thing
+    get_target_property(HERACLES_INCLUDE_DIRS HERACLES_DATA_FORMATS::heracles_data_formats INTERFACE_INCLUDE_DIRECTORIES)
+    include_directories(${HERACLES_INCLUDE_DIRS})
+endif()
+
 if(WITH_NTL)
     ### Find gmp and ntl libraries. They must be installed by the user
     list(APPEND general_paths "/usr" "/usr/local" "/opt" "/opt/local")
