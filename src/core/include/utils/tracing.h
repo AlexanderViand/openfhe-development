@@ -73,31 +73,32 @@ struct FunctionTracer {
 
     // Input Registration Functions. These are expected to not modify their inputs,
     // even when they can for technical reasons (lacking const/const on ptr instead of object).
-
-    virtual void registerInput(Ciphertext<Element> ciphertext, std::string name = "")       = 0;
-    virtual void registerInput(ConstCiphertext<Element> ciphertext, std::string name = "")  = 0;
+    virtual void registerInput(Ciphertext<Element> ciphertext, std::string name = "", bool isisMutable = false)     = 0;
+    virtual void registerInput(ConstCiphertext<Element> ciphertext, std::string name = "",
+                               bool isisMutable = false)                                                            = 0;
     virtual void registerInputs(std::initializer_list<Ciphertext<Element>> ciphertexts,
-                                std::initializer_list<std::string> name = {})               = 0;
+                                std::initializer_list<std::string> name = {}, bool isisMutable = false)             = 0;
     virtual void registerInputs(std::initializer_list<ConstCiphertext<Element>> ciphertexts,
-                                std::initializer_list<std::string> name = {})               = 0;
-    virtual void registerInput(Plaintext plaintext, std::string name = "")                  = 0;
-    virtual void registerInput(ConstPlaintext plaintext, std::string name = "")             = 0;
+                                std::initializer_list<std::string> name = {}, bool isisMutable = false)             = 0;
+    virtual void registerInput(Plaintext plaintext, std::string name = "", bool isisMutable = false)                = 0;
+    virtual void registerInput(ConstPlaintext plaintext, std::string name = "", bool isisMutable = false)           = 0;
     virtual void registerInputs(std::initializer_list<Plaintext> plaintexts,
-                                std::initializer_list<std::string> name = {})               = 0;
-    virtual void registerInput(const PublicKey<Element> publicKey, std::string name = "")   = 0;
-    virtual void registerInput(const PrivateKey<Element> privateKey, std::string name = "") = 0;
-    virtual void registerInput(const PlaintextEncodings encoding, std::string name = "")    = 0;
-    virtual void registerInput(const std::vector<int64_t>& values, std::string name = "")   = 0;
-    virtual void registerInput(double value, std::string name = "")                         = 0;
-    virtual void registerInput(std::complex<double> value, std::string name = "")           = 0;
-    virtual void registerInput(int32_t value, std::string name = "") {
-        registerInput(static_cast<int64_t>(value), name);
+                                std::initializer_list<std::string> name = {}, bool isisMutable = false)             = 0;
+    virtual void registerInput(const PublicKey<Element> publicKey, std::string name = "", bool isisMutable = false) = 0;
+    virtual void registerInput(const PrivateKey<Element> privateKey, std::string name = "",
+                               bool isisMutable = false)                                                            = 0;
+    virtual void registerInput(const PlaintextEncodings encoding, std::string name = "", bool isisMutable = false)  = 0;
+    virtual void registerInput(const std::vector<int64_t>& values, std::string name = "", bool isisMutable = false) = 0;
+    virtual void registerInput(double value, std::string name = "", bool isisMutable = false)                       = 0;
+    virtual void registerInput(std::complex<double> value, std::string name = "", bool isisMutable = false)         = 0;
+    virtual void registerInput(int32_t value, std::string name = "", bool isisMutable = false) {
+        registerInput(static_cast<int64_t>(value), name, isisMutable);
     }
-    virtual void registerInput(int64_t value, std::string name = "") = 0;
-    virtual void registerInput(size_t value, std::string name = "")  = 0;
+    virtual void registerInput(int64_t value, std::string name = "", bool isisMutable = false) = 0;
+    virtual void registerInput(size_t value, std::string name = "", bool isisMutable = false)  = 0;
 
     /// If there are unknown types that should be traced, they should be registered here.
-    virtual void registerInput(void* ptr, std::string name = "") = 0;
+    virtual void registerInput(void* ptr, std::string name = "", bool isisMutable = false) = 0;
 
     // Output Registration Functions. These are allowed to modify the output (specifically, it's metadata)
     // but must return their input, since they might be called from a functions'  return statement.
@@ -151,24 +152,25 @@ public:
     NullFunctionTracer()                   = default;
     virtual ~NullFunctionTracer() override = default;
 
-    virtual void registerInput(Ciphertext<Element>, std::string) override {}
-    virtual void registerInput(ConstCiphertext<Element>, std::string) override {}
-    virtual void registerInputs(std::initializer_list<Ciphertext<Element>>,
-                                std::initializer_list<std::string>) override {}
-    virtual void registerInputs(std::initializer_list<ConstCiphertext<Element>>,
-                                std::initializer_list<std::string>) override {}
-    virtual void registerInput(Plaintext, std::string) override {}
-    virtual void registerInput(ConstPlaintext, std::string) override {}
-    virtual void registerInputs(std::initializer_list<Plaintext>, std::initializer_list<std::string>) override {}
-    virtual void registerInput(const PublicKey<Element>, std::string) override {}
-    virtual void registerInput(const PrivateKey<Element>, std::string) override {}
-    virtual void registerInput(const PlaintextEncodings, std::string) override {}
-    virtual void registerInput(const std::vector<int64_t>&, std::string) override {}
-    virtual void registerInput(double, std::string) override {}
-    virtual void registerInput(std::complex<double> value, std::string name = "") override {}
-    virtual void registerInput(int64_t, std::string) override {}
-    virtual void registerInput(size_t, std::string) override {}
-    virtual void registerInput(void*, std::string) override {}
+    virtual void registerInput(Ciphertext<Element>, std::string, bool isMutable = false) override {}
+    virtual void registerInput(ConstCiphertext<Element>, std::string, bool isMutable = false) override {}
+    virtual void registerInputs(std::initializer_list<Ciphertext<Element>>, std::initializer_list<std::string>,
+                                bool isMutable = false) override {}
+    virtual void registerInputs(std::initializer_list<ConstCiphertext<Element>>, std::initializer_list<std::string>,
+                                bool isMutable = false) override {}
+    virtual void registerInput(Plaintext, std::string, bool isMutable = false) override {}
+    virtual void registerInput(ConstPlaintext, std::string, bool isMutable = false) override {}
+    virtual void registerInputs(std::initializer_list<Plaintext>, std::initializer_list<std::string>,
+                                bool isMutable = false) override {}
+    virtual void registerInput(const PublicKey<Element>, std::string, bool isMutable = false) override {}
+    virtual void registerInput(const PrivateKey<Element>, std::string, bool isMutable = false) override {}
+    virtual void registerInput(const PlaintextEncodings, std::string, bool isMutable = false) override {}
+    virtual void registerInput(const std::vector<int64_t>&, std::string, bool isMutable = false) override {}
+    virtual void registerInput(double, std::string, bool isMutable = false) override {}
+    virtual void registerInput(std::complex<double> value, std::string name = "", bool isMutable = false) override {}
+    virtual void registerInput(int64_t, std::string, bool isMutable = false) override {}
+    virtual void registerInput(size_t, std::string, bool isMutable = false) override {}
+    virtual void registerInput(void*, std::string, bool isMutable = false) override {}
 
     virtual Ciphertext<Element> registerOutput(Ciphertext<Element> ciphertext, std::string) override {
         return ciphertext;

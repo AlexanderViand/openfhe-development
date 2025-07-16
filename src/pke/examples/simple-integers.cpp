@@ -51,8 +51,7 @@ int main() {
     cryptoContext->Enable(KEYSWITCH);
     cryptoContext->Enable(LEVELEDSHE);
 
-    // auto tracer = std::make_shared<MlirTracer<DCRTPoly>>("simple_integers.mlir");
-    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("simple_integers"));
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("simple-integers-trace.txt"));
     IF_TRACE(cryptoContext->setTracer(std::move(tracer)));
 
     // Sample Program: Step 2: Key Generation
