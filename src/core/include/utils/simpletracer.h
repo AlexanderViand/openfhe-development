@@ -46,16 +46,10 @@ using OStreamPtr = std::shared_ptr<std::ostream>;
 template <typename Element>
 class SimpleFunctionTracer : public FunctionTracer<Element> {
 private:
-    /// SFINAE helper to detect if a type has metadata support
+    /// Helper to register objects with IDs (no type suffix)
     template <typename T>
-    static auto hasMetadata(int) -> decltype(std::declval<T>()->FindMetadataByKey(""), std::true_type{});
-
-    template <typename T>
-    static std::false_type hasMetadata(...);
-
-    /// Helper to find the right id for an object and register it
-    template <typename T>
-    void registerInputHelper(T obj, const std::string& type, const std::string& name, bool isMutable) {
+    void registerObjectHelper(T obj, const std::string& type, const std::string& name,
+                              std::vector<std::string>& target) {
         // Serialize and hash the object for uniqueness detection
         std::stringstream serialStream;
         Serial::Serialize(obj, serialStream, SerType::BINARY);
@@ -65,89 +59,67 @@ private:
         auto hashIt = m_tracer->m_uniqueID.find(hash);
         if (hashIt != m_tracer->m_uniqueID.end()) {
             // Object already seen - reuse existing ID
-            const std::string& existingId = hashIt->second;
-            m_inputs.push_back(name + " " + existingId + " : " + type);
+            target.push_back(name + " " + hashIt->second);
             return;
         }
 
-        // New object - generate unique ID based on metadata support
-        std::string baseId;
-        if constexpr (decltype(hasMetadata<T>(0))::value) {
-            // Object has metadata support
-            baseId = getOrCreateMetadataId(obj, type);
-        }
-        else {
-            // Object without metadata - generate ID based on type only
-            baseId = generateBaseIdFromType(type);
-        }
-
-        std::string uniqueId = generateUniqueId(baseId);
-
-        // Store the mapping from hash to unique ID
-        m_tracer->m_uniqueID[hash] = uniqueId;
-
-        // Add to inputs
-        m_inputs.push_back(name + " " + uniqueId + " : " + type);
+        // Generate new ID
+        std::string id             = generateObjectId(type);
+        m_tracer->m_uniqueID[hash] = id;
+        target.push_back(name + " " + id);
     }
 
-    /// Helper to find the right id for an output object and register it
+    /// Helper for initializer lists
     template <typename T>
-    void registerOutputHelper(T obj, const std::string& type, const std::string& name) {
-        // Serialize and hash the object for uniqueness detection
-        std::stringstream serialStream;
-        Serial::Serialize(obj, serialStream, SerType::BINARY);
-        const std::string hash = HashUtil::HashString(serialStream.str());
-
-        // Check if we already have a unique ID for this hash
-        auto hashIt = m_tracer->m_uniqueID.find(hash);
-        if (hashIt != m_tracer->m_uniqueID.end()) {
-            // Object already seen - reuse existing ID
-            const std::string& existingId = hashIt->second;
-            m_outputs.push_back(name + " " + existingId + " : " + type);
+    void registerObjectsHelper(std::initializer_list<T> objects, std::initializer_list<std::string> names,
+                               const std::string& type, std::vector<std::string>& target) {
+        if (names.size() == 0) {
+            for (auto& obj : objects) {
+                registerObjectHelper(obj, type, "", target);
+            }
             return;
         }
-
-        // New object - generate unique ID based on metadata support
-        std::string baseId;
-        if constexpr (decltype(hasMetadata<T>(0))::value) {
-            // Object has metadata support
-            baseId = getOrCreateMetadataId(obj, type);
+        assert(objects.size() == names.size() && "objects and names must have the same size");
+        auto objIt  = objects.begin();
+        auto nameIt = names.begin();
+        for (; objIt != objects.end(); ++objIt, ++nameIt) {
+            registerObjectHelper(*objIt, type, *nameIt, target);
         }
-        else {
-            // Object without metadata - generate ID based on type only
-            baseId = generateBaseIdFromType(type);
-        }
-
-        std::string uniqueId = generateUniqueId(baseId);
-
-        // Store the mapping from hash to unique ID
-        m_tracer->m_uniqueID[hash] = uniqueId;
-
-        // Add to outputs
-        m_outputs.push_back(name + " " + uniqueId + " : " + type);
     }
 
+    std::string generateObjectId(const std::string& type) {
+        size_t& counter = m_tracer->m_counters[type];
+        return type + "_" + std::to_string(++counter);
+    }
+
+    /// Helper to format vectors with truncation
     template <typename T>
-    std::string getOrCreateMetadataId(T obj, const std::string& type) {
-        // Check if object has existing tracing_id metadata
-        auto metadataIterator = obj->FindMetadataByKey("tracing_id");
-        if (obj->MetadataFound(metadataIterator)) {
-            return std::dynamic_pointer_cast<TracingID>(obj->GetMetadata(metadataIterator))->getID();
+    std::string formatVector(const std::vector<T>& values, const std::string& typeName) {
+        std::stringstream ss;
+        ss << "[";
+        for (size_t i = 0; i < values.size(); ++i) {
+            if (i > 0)
+                ss << ", ";
+            formatVectorElement(ss, values[i]);
+            if (i >= 10) {  // Limit output to avoid very long traces
+                ss << ", ...(" << (values.size() - i - 1) << " more)";
+                break;
+            }
         }
-
-        // No metadata ID - generate one based on type
-        size_t& typeCounter = m_tracer->m_counters[type];
-        return type + "_" + std::to_string(++typeCounter);
+        ss << "]";
+        return ss.str() + " : " + typeName;
     }
 
-    std::string generateUniqueId(const std::string& baseId) {
-        size_t& idCounter = m_tracer->m_counters[baseId];
-        return baseId + "_" + std::to_string(++idCounter);
+    /// Helper to format individual vector elements
+    void formatVectorElement(std::stringstream& ss, int64_t value) {
+        ss << value;
     }
 
-    std::string generateBaseIdFromType(const std::string& type) {
-        size_t& typeCounter = m_tracer->m_counters[type];
-        return type + "_" + std::to_string(++typeCounter);
+    void formatVectorElement(std::stringstream& ss, const std::complex<double>& value) {
+        ss << "(" << value.real();
+        if (value.imag() >= 0)
+            ss << "+";
+        ss << value.imag() << "i)";
     }
 
 public:
@@ -167,67 +139,35 @@ public:
 
     void registerInputs(std::initializer_list<Ciphertext<Element>> ciphertexts,
                         std::initializer_list<std::string> names = {}, bool isMutable = false) override {
-        if (names.size() == 0) {
-            for (auto& ct : ciphertexts) {
-                registerInput(ct, "");
-            }
-            return;
-        }
-        assert(ciphertexts.size() == names.size() && "ciphertexts and names must have the same size");
-        auto ctIt   = ciphertexts.begin();
-        auto nameIt = names.begin();
-        for (; ctIt != ciphertexts.end(); ++ctIt, ++nameIt) {
-            registerInput(*ctIt, *nameIt, isMutable);
-        }
+        registerObjectsHelper(ciphertexts, names, "ciphertext", m_inputs);
     }
 
     void registerInputs(std::initializer_list<ConstCiphertext<Element>> ciphertexts,
                         std::initializer_list<std::string> names = {}, bool isMutable = false) override {
-        if (names.size() == 0) {
-            for (auto& ct : ciphertexts) {
-                registerInput(ct, "");
-            }
-            return;
-        }
-        assert(ciphertexts.size() == names.size() && "ciphertexts and names must have the same size");
-        auto ctIt   = ciphertexts.begin();
-        auto nameIt = names.begin();
-        for (; ctIt != ciphertexts.end(); ++ctIt, ++nameIt) {
-            registerInput(*ctIt, *nameIt, isMutable);
-        }
+        registerObjectsHelper(ciphertexts, names, "const_ciphertext", m_inputs);
     }
+
     void registerInput(Ciphertext<Element> ciphertext, std::string name = "", bool isMutable = false) override {
-        registerInputHelper(ciphertext, "ciphertext", name, isMutable);
+        registerObjectHelper(ciphertext, "ciphertext", name, m_inputs);
     }
     void registerInput(ConstCiphertext<Element> ciphertext, std::string name = "", bool isMutable = false) override {
-        registerInputHelper(ciphertext, "const_ciphertext", name, isMutable);
+        registerObjectHelper(ciphertext, "const_ciphertext", name, m_inputs);
     }
     void registerInput(Plaintext plaintext, std::string name = "", bool isMutable = false) override {
-        registerInputHelper(plaintext, "plaintext", name, isMutable);
+        registerObjectHelper(plaintext, "plaintext", name, m_inputs);
     }
     void registerInput(ConstPlaintext plaintext, std::string name = "", bool isMutable = false) override {
-        registerInputHelper(plaintext, "plaintext", name, isMutable);
+        registerObjectHelper(plaintext, "plaintext", name, m_inputs);
     }
     void registerInputs(std::initializer_list<Plaintext> plaintexts, std::initializer_list<std::string> names = {},
                         bool isMutable = false) override {
-        if (names.size() == 0) {
-            for (auto& pt : plaintexts) {
-                registerInputHelper(pt, "plaintext", "", isMutable);
-            }
-            return;
-        }
-        assert(plaintexts.size() == names.size() && "plaintexts and names must have the same size");
-        auto ptIt   = plaintexts.begin();
-        auto nameIt = names.begin();
-        for (; ptIt != plaintexts.end(); ++ptIt, ++nameIt) {
-            registerInputHelper(*ptIt, "plaintext", *nameIt, isMutable);
-        }
+        registerObjectsHelper(plaintexts, names, "plaintext", m_inputs);
     }
     void registerInput(const PublicKey<Element> key, std::string name = "", bool isMutable = false) override {
-        registerInputHelper(key, "public_key", name, isMutable);
+        registerObjectHelper(key, "public_key", name, m_inputs);
     }
     void registerInput(const PrivateKey<Element> key, std::string name = "", bool isMutable = false) override {
-        registerInputHelper(key, "private_key", name, isMutable);
+        registerObjectHelper(key, "private_key", name, m_inputs);
     }
     void registerInput(const PlaintextEncodings encoding, std::string name = "", bool isMutable = false) override {
         std::string encodingStr;
@@ -251,19 +191,7 @@ public:
         m_inputs.push_back(name + " " + encodingStr + " : PlaintextEncodings");
     }
     void registerInput(const std::vector<int64_t>& values, std::string name = "", bool isMutable = false) override {
-        std::stringstream ss;
-        ss << "[";
-        for (size_t i = 0; i < values.size(); ++i) {
-            if (i > 0)
-                ss << ", ";
-            ss << values[i];
-            if (i >= 10) {  // Limit output to avoid very long traces
-                ss << ", ...(" << (values.size() - i - 1) << " more)";
-                break;
-            }
-        }
-        ss << "]";
-        m_inputs.push_back(name + " " + ss.str() + " : vector<int64_t>");
+        m_inputs.push_back(name + " " + formatVector(values, "vector<int64_t>"));
     }
     void registerInput(double value, std::string name = "", bool isMutable = false) override {
         m_inputs.push_back(name + " " + std::to_string(value) + " : double");
@@ -289,34 +217,19 @@ public:
     }
     void registerInput(const std::vector<std::complex<double>>& values, std::string name = "",
                        bool isisMutable = false) override {
-        std::stringstream ss;
-        ss << "[";
-        for (size_t i = 0; i < values.size(); ++i) {
-            if (i > 0)
-                ss << ", ";
-            ss << "(" << values[i].real();
-            if (values[i].imag() >= 0)
-                ss << "+";
-            ss << values[i].imag() << "i)";
-            if (i >= 10) {  // Limit output to avoid very long traces
-                ss << ", ...(" << (values.size() - i - 1) << " more)";
-                break;
-            }
-        }
-        ss << "]";
-        m_inputs.push_back(name + " " + ss.str() + " : vector<complex<double>>");
+        m_inputs.push_back(name + " " + formatVector(values, "vector<complex<double>>"));
     }
 
     Ciphertext<Element> registerOutput(Ciphertext<Element> ciphertext, std::string name = "") override {
-        registerOutputHelper(ciphertext, "ciphertext", name);
+        registerObjectHelper(ciphertext, "ciphertext", name, m_outputs);
         return ciphertext;
     }
     ConstCiphertext<Element> registerOutput(ConstCiphertext<Element> ciphertext, std::string name = "") override {
-        registerOutputHelper(ciphertext, "const_ciphertext", name);
+        registerObjectHelper(ciphertext, "const_ciphertext", name, m_outputs);
         return ciphertext;
     }
     Plaintext registerOutput(Plaintext plaintext, std::string name = "") override {
-        registerOutputHelper(plaintext, "plaintext", name);
+        registerObjectHelper(plaintext, "plaintext", name, m_outputs);
         return plaintext;
     }
 
@@ -343,19 +256,7 @@ public:
         return value;
     }
     std::vector<int64_t> registerOutput(const std::vector<int64_t>& values, std::string name = "") {
-        std::stringstream ss;
-        ss << "[";
-        for (size_t i = 0; i < values.size(); ++i) {
-            if (i > 0)
-                ss << ", ";
-            ss << values[i];
-            if (i >= 10) {  // Limit output to avoid very long traces
-                ss << ", ...(" << (values.size() - i - 1) << " more)";
-                break;
-            }
-        }
-        ss << "]";
-        m_outputs.push_back(name + " " + ss.str() + " : vector<int64_t>");
+        m_outputs.push_back(name + " " + formatVector(values, "vector<int64_t>"));
         return values;
     }
 
@@ -425,15 +326,10 @@ private:
     /// Output stream to write the trace to (e.g., a file)
     OStreamPtr m_stream;
 
-    /// Map from (non-unique) Metadata ID to (last-seen) hash of the object
-    /// Specifically, the hash should be SHA256 of the binary serialization of the object
-    std::unordered_map<std::string, std::string> m_lastSeen;
-
     /// Map from hash of the object to a unique ID for that object
-    /// Specifically, the hash should be SHA256 of the binary serialization of the object
     std::unordered_map<std::string, std::string> m_uniqueID;
 
-    /// Map from (non-unique) Metadata ID to current counter
+    /// Map from type name to current counter for ID generation
     std::unordered_map<std::string, size_t> m_counters;
 
     /// Basic "scoping" support via indentation levels
