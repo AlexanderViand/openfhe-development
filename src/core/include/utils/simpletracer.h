@@ -14,6 +14,8 @@
     #include <vector>
     #include <cassert>
     #include <type_traits>
+    #include <complex>
+    #include <iomanip>
 
     #include "cryptocontext-ser.h"
     #include "ciphertext-ser.h"
@@ -86,6 +88,43 @@ private:
 
         // Add to inputs
         m_inputs.push_back(name + " " + uniqueId + " : " + type);
+    }
+
+    /// Helper to find the right id for an output object and register it
+    template <typename T>
+    void registerOutputHelper(T obj, const std::string& type, const std::string& name) {
+        // Serialize and hash the object for uniqueness detection
+        std::stringstream serialStream;
+        Serial::Serialize(obj, serialStream, SerType::BINARY);
+        const std::string hash = HashUtil::HashString(serialStream.str());
+
+        // Check if we already have a unique ID for this hash
+        auto hashIt = m_tracer->m_uniqueID.find(hash);
+        if (hashIt != m_tracer->m_uniqueID.end()) {
+            // Object already seen - reuse existing ID
+            const std::string& existingId = hashIt->second;
+            m_outputs.push_back(name + " " + existingId + " : " + type);
+            return;
+        }
+
+        // New object - generate unique ID based on metadata support
+        std::string baseId;
+        if constexpr (decltype(hasMetadata<T>(0))::value) {
+            // Object has metadata support
+            baseId = getOrCreateMetadataId(obj, type);
+        }
+        else {
+            // Object without metadata - generate ID based on type only
+            baseId = generateBaseIdFromType(type);
+        }
+
+        std::string uniqueId = generateUniqueId(baseId);
+
+        // Store the mapping from hash to unique ID
+        m_tracer->m_uniqueID[hash] = uniqueId;
+
+        // Add to outputs
+        m_outputs.push_back(name + " " + uniqueId + " : " + type);
     }
 
     template <typename T>
@@ -184,24 +223,140 @@ public:
             registerInputHelper(*ptIt, "plaintext", *nameIt, isMutable);
         }
     }
-    void registerInput(const PublicKey<Element> key, std::string name = "", bool isMutable = false) override {}
-    void registerInput(const PrivateKey<Element> key, std::string name = "", bool isMutable = false) override {}
-    void registerInput(const PlaintextEncodings encoding, std::string name = "", bool isMutable = false) override {}
-    void registerInput(const std::vector<int64_t>& values, std::string name = "", bool isMutable = false) override {}
-    void registerInput(double value, std::string name = "", bool isMutable = false) override {}
-    void registerInput(std::complex<double> value, std::string name = "", bool isMutable = false) override {}
-    void registerInput(int64_t value, std::string name = "", bool isMutable = false) override {}
-    void registerInput(size_t value, std::string name = "", bool isMutable = false) override {}
-    void registerInput(void* ptr, std::string name = "", bool isMutable = false) override {}
+    void registerInput(const PublicKey<Element> key, std::string name = "", bool isMutable = false) override {
+        registerInputHelper(key, "public_key", name, isMutable);
+    }
+    void registerInput(const PrivateKey<Element> key, std::string name = "", bool isMutable = false) override {
+        registerInputHelper(key, "private_key", name, isMutable);
+    }
+    void registerInput(const PlaintextEncodings encoding, std::string name = "", bool isMutable = false) override {
+        std::string encodingStr;
+        switch (encoding) {
+            case PlaintextEncodings::COEF_PACKED_ENCODING:
+                encodingStr = "COEF_PACKED_ENCODING";
+                break;
+            case PlaintextEncodings::PACKED_ENCODING:
+                encodingStr = "PACKED_ENCODING";
+                break;
+            case PlaintextEncodings::STRING_ENCODING:
+                encodingStr = "STRING_ENCODING";
+                break;
+            case PlaintextEncodings::CKKS_PACKED_ENCODING:
+                encodingStr = "CKKS_PACKED_ENCODING";
+                break;
+            default:
+                encodingStr = "UNKNOWN_ENCODING";
+                break;
+        }
+        m_inputs.push_back(name + " " + encodingStr + " : PlaintextEncodings");
+    }
+    void registerInput(const std::vector<int64_t>& values, std::string name = "", bool isMutable = false) override {
+        std::stringstream ss;
+        ss << "[";
+        for (size_t i = 0; i < values.size(); ++i) {
+            if (i > 0)
+                ss << ", ";
+            ss << values[i];
+            if (i >= 10) {  // Limit output to avoid very long traces
+                ss << ", ...(" << (values.size() - i - 1) << " more)";
+                break;
+            }
+        }
+        ss << "]";
+        m_inputs.push_back(name + " " + ss.str() + " : vector<int64_t>");
+    }
+    void registerInput(double value, std::string name = "", bool isMutable = false) override {
+        m_inputs.push_back(name + " " + std::to_string(value) + " : double");
+    }
+    void registerInput(std::complex<double> value, std::string name = "", bool isMutable = false) override {
+        std::stringstream ss;
+        ss << "(" << value.real();
+        if (value.imag() >= 0)
+            ss << "+";
+        ss << value.imag() << "i)";
+        m_inputs.push_back(name + " " + ss.str() + " : complex<double>");
+    }
+    void registerInput(int64_t value, std::string name = "", bool isMutable = false) override {
+        m_inputs.push_back(name + " " + std::to_string(value) + " : int64_t");
+    }
+    void registerInput(size_t value, std::string name = "", bool isMutable = false) override {
+        m_inputs.push_back(name + " " + std::to_string(value) + " : size_t");
+    }
+    void registerInput(void* ptr, std::string name = "", bool isMutable = false) override {
+        std::stringstream ss;
+        ss << std::hex << ptr;
+        m_inputs.push_back(name + " 0x" + ss.str() + " : void*");
+    }
+    void registerInput(const std::vector<std::complex<double>>& values, std::string name = "",
+                       bool isisMutable = false) override {
+        std::stringstream ss;
+        ss << "[";
+        for (size_t i = 0; i < values.size(); ++i) {
+            if (i > 0)
+                ss << ", ";
+            ss << "(" << values[i].real();
+            if (values[i].imag() >= 0)
+                ss << "+";
+            ss << values[i].imag() << "i)";
+            if (i >= 10) {  // Limit output to avoid very long traces
+                ss << ", ...(" << (values.size() - i - 1) << " more)";
+                break;
+            }
+        }
+        ss << "]";
+        m_inputs.push_back(name + " " + ss.str() + " : vector<complex<double>>");
+    }
 
     Ciphertext<Element> registerOutput(Ciphertext<Element> ciphertext, std::string name = "") override {
+        registerOutputHelper(ciphertext, "ciphertext", name);
         return ciphertext;
     }
     ConstCiphertext<Element> registerOutput(ConstCiphertext<Element> ciphertext, std::string name = "") override {
+        registerOutputHelper(ciphertext, "const_ciphertext", name);
         return ciphertext;
     }
     Plaintext registerOutput(Plaintext plaintext, std::string name = "") override {
+        registerOutputHelper(plaintext, "plaintext", name);
         return plaintext;
+    }
+
+    // Output registration for basic types
+    double registerOutput(double value, std::string name = "") {
+        m_outputs.push_back(name + " " + std::to_string(value) + " : double");
+        return value;
+    }
+    std::complex<double> registerOutput(std::complex<double> value, std::string name = "") {
+        std::stringstream ss;
+        ss << "(" << value.real();
+        if (value.imag() >= 0)
+            ss << "+";
+        ss << value.imag() << "i)";
+        m_outputs.push_back(name + " " + ss.str() + " : complex<double>");
+        return value;
+    }
+    int64_t registerOutput(int64_t value, std::string name = "") {
+        m_outputs.push_back(name + " " + std::to_string(value) + " : int64_t");
+        return value;
+    }
+    size_t registerOutput(size_t value, std::string name = "") {
+        m_outputs.push_back(name + " " + std::to_string(value) + " : size_t");
+        return value;
+    }
+    std::vector<int64_t> registerOutput(const std::vector<int64_t>& values, std::string name = "") {
+        std::stringstream ss;
+        ss << "[";
+        for (size_t i = 0; i < values.size(); ++i) {
+            if (i > 0)
+                ss << ", ";
+            ss << values[i];
+            if (i >= 10) {  // Limit output to avoid very long traces
+                ss << ", ...(" << (values.size() - i - 1) << " more)";
+                break;
+            }
+        }
+        ss << "]";
+        m_outputs.push_back(name + " " + ss.str() + " : vector<int64_t>");
+        return values;
     }
 
 private:

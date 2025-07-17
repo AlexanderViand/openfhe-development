@@ -36,6 +36,7 @@
 #define PROFILE
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 #include <vector>
 #include <iostream>
 
@@ -153,6 +154,10 @@ void SimpleComplexNumbers() {
     cc->Enable(PKE);
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("simple-complex-numbers-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
+
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension() << std::endl << std::endl;
 
     // B. Step 2: Key Generation
@@ -410,6 +415,9 @@ void SimpleBootstrappingComplex() {
     cryptoContext->Enable(LEVELEDSHE);
     cryptoContext->Enable(ADVANCEDSHE);
     cryptoContext->Enable(FHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("simple-bootstrapping-complex-trace.txt"));
+    IF_TRACE(cryptoContext->setTracer(std::move(tracer)));
 
     usint ringDim = cryptoContext->GetRingDimension();
     // This is the maximum number of slots that can be used for full packing.

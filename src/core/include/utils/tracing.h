@@ -91,6 +91,8 @@ struct FunctionTracer {
     virtual void registerInput(const std::vector<int64_t>& values, std::string name = "", bool isisMutable = false) = 0;
     virtual void registerInput(double value, std::string name = "", bool isisMutable = false)                       = 0;
     virtual void registerInput(std::complex<double> value, std::string name = "", bool isisMutable = false)         = 0;
+    virtual void registerInput(const std::vector<std::complex<double>>& values, std::string name = "",
+                               bool isisMutable = false)                                                            = 0;
     virtual void registerInput(int32_t value, std::string name = "", bool isisMutable = false) {
         registerInput(static_cast<int64_t>(value), name, isisMutable);
     }
@@ -168,6 +170,8 @@ public:
     virtual void registerInput(const std::vector<int64_t>&, std::string, bool isMutable = false) override {}
     virtual void registerInput(double, std::string, bool isMutable = false) override {}
     virtual void registerInput(std::complex<double> value, std::string name = "", bool isMutable = false) override {}
+    virtual void registerInput(const std::vector<std::complex<double>>&, std::string, bool isMutable = false) override {
+    }
     virtual void registerInput(int64_t, std::string, bool isMutable = false) override {}
     virtual void registerInput(size_t, std::string, bool isMutable = false) override {}
     virtual void registerInput(void*, std::string, bool isMutable = false) override {}
