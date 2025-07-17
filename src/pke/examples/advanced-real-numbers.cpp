@@ -37,6 +37,7 @@
 #define PROFILE
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 using namespace lbcrypto;
 
@@ -179,6 +180,12 @@ void AutomaticRescaleDemo(ScalingTechnique scalTech) {
     cc->Enable(PKE);
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
+
+    std::string scalStr = (scalTech == FLEXIBLEAUTO)    ? "flexible-auto" :
+                          (scalTech == FLEXIBLEAUTOEXT) ? "flexible-auto-ext" :
+                                                          "fixed-auto";
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("advanced-real-numbers-" + scalStr + "-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
@@ -348,6 +355,9 @@ void ManualRescaleDemo(ScalingTechnique scalTech) {
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
 
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("advanced-real-numbers-manual-rescale-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
+
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
 
@@ -482,6 +492,10 @@ void HybridKeySwitchingDemo1() {
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
 
+    IF_TRACE(auto tracer =
+                 std::make_shared<SimpleTracer<DCRTPoly>>("advanced-real-numbers-hybrid-key-switching-1-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
+
     auto keys = cc->KeyGen();
     cc->EvalRotateKeyGen(keys.secretKey, {1, -2});
 
@@ -595,6 +609,10 @@ void HybridKeySwitchingDemo2() {
     cc->Enable(PKE);
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
+
+    IF_TRACE(auto tracer =
+                 std::make_shared<SimpleTracer<DCRTPoly>>("advanced-real-numbers-hybrid-key-switching-2-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     auto keys = cc->KeyGen();
     cc->EvalRotateKeyGen(keys.secretKey, {1, -2});
@@ -714,6 +732,10 @@ void FastRotationsDemo1() {
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
 
+    IF_TRACE(auto tracer =
+                 std::make_shared<SimpleTracer<DCRTPoly>>("advanced-real-numbers-fast-rotations-1-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
+
     auto keys = cc->KeyGen();
     cc->EvalRotateKeyGen(keys.secretKey, {1, 2, 3, 4, 5, 6, 7});
 
@@ -830,6 +852,10 @@ void FastRotationsDemo2() {
     cc->Enable(PKE);
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
+
+    IF_TRACE(auto tracer =
+                 std::make_shared<SimpleTracer<DCRTPoly>>("advanced-real-numbers-fast-rotations-2-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     auto keys = cc->KeyGen();
     cc->EvalRotateKeyGen(keys.secretKey, {1, 2, 3, 4, 5, 6, 7});

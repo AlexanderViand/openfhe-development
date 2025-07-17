@@ -40,6 +40,7 @@
 #include <random>
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 #include "math/math-hal.h"
 
 using namespace lbcrypto;
@@ -82,6 +83,9 @@ void BFVrnsEvalRotate2n() {
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
 
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("rotation-bfv-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
+
     int32_t n = cc->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder() / 2;
 
     // Initialize the public key containers.
@@ -123,6 +127,9 @@ void CKKSEvalRotate2n() {
     cc->Enable(PKE);
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("rotation-ckks-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     usint cyclOrder = cc->GetCyclotomicOrder();
 
@@ -170,6 +177,9 @@ void BFVrnsEvalMerge2n() {
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("rotation-merge-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     // Initialize the public key containers.
     KeyPair<DCRTPoly> kp = cc->KeyGen();

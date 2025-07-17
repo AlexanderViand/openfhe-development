@@ -36,6 +36,7 @@
 #define PROFILE
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 using namespace lbcrypto;
 
@@ -125,6 +126,10 @@ int main() {
     cc->Enable(PKE);
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("simple-real-numbers-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
+
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension() << std::endl << std::endl;
 
     // B. Step 2: Key Generation

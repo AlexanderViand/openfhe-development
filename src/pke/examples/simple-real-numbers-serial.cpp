@@ -40,6 +40,7 @@
 #include <unistd.h>
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 // header files needed for serialization
 #include "ciphertext-ser.h"
@@ -109,6 +110,9 @@ std::tuple<CryptoContext<DCRTPoly>, KeyPair<DCRTPoly>, int> serverSetupAndWrite(
     serverCC->Enable(PKE);
     serverCC->Enable(KEYSWITCH);
     serverCC->Enable(LEVELEDSHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("simple-real-numbers-serial-trace.txt"));
+    IF_TRACE(serverCC->setTracer(std::move(tracer)));
 
     std::cout << "Cryptocontext generated" << std::endl;
 

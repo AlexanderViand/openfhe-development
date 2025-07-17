@@ -35,6 +35,7 @@
 
 #include "openfhe.h"
 #include "math/chebyshev.h"
+#include "utils/simpletracer.h"
 
 using namespace lbcrypto;
 
@@ -84,6 +85,9 @@ void EvalLogisticExample() {
     cc->Enable(LEVELEDSHE);
     // We need to enable Advanced SHE to use the Chebyshev approximation.
     cc->Enable(ADVANCEDSHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("function-evaluation-logistic-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     auto keyPair = cc->KeyGen();
     // We need to generate mult keys to run Chebyshev approximations.
@@ -145,6 +149,9 @@ void EvalFunctionExample() {
     cc->Enable(LEVELEDSHE);
     // We need to enable Advanced SHE to use the Chebyshev approximation.
     cc->Enable(ADVANCEDSHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("function-evaluation-sqrt-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     auto keyPair = cc->KeyGen();
     // We need to generate mult keys to run Chebyshev approximations.

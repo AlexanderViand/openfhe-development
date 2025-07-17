@@ -33,6 +33,7 @@
 */
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 #include <memory>
 #include <map>
@@ -70,6 +71,9 @@ void ThresholdFHE(enum ScalingTechnique rescaleTech) {
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
     cc->Enable(MULTIPARTY);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("interactive-bootstrapping-threshold-fhe-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     // Initialize Public Key Containers
     KeyPair<DCRTPoly> kp1;
@@ -174,6 +178,9 @@ void Chebyshev(enum ScalingTechnique rescaleTech) {
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
     cc->Enable(MULTIPARTY);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("interactive-bootstrapping-chebyshev-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     // Initialize Public Key Containers
     KeyPair<DCRTPoly> kp1;

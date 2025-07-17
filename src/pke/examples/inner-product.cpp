@@ -35,6 +35,7 @@
 
 #include <iostream>
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 #include <vector>
 
 using namespace lbcrypto;
@@ -70,6 +71,9 @@ bool innerProductBFV(std::vector<int64_t>& incomingVector) {
     cc->Enable(PKE);
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("inner-product-bfv-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     KeyPair keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
@@ -107,6 +111,9 @@ bool innerProductCKKS(const std::vector<double>& incomingVector) {
     cc->Enable(PKE);
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("inner-product-ckks-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     KeyPair keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);

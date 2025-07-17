@@ -38,6 +38,7 @@ Example for CKKS bootstrapping with sparse packing
 #define PROFILE
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 using namespace lbcrypto;
 
@@ -141,6 +142,9 @@ void BootstrapExample(uint32_t numSlots) {
     cryptoContext->Enable(LEVELEDSHE);
     cryptoContext->Enable(ADVANCEDSHE);
     cryptoContext->Enable(FHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("advanced-ckks-bootstrapping-trace.txt"));
+    IF_TRACE(cryptoContext->setTracer(std::move(tracer)));
 
     usint ringDim = cryptoContext->GetRingDimension();
     std::cout << "CKKS scheme is using ring dimension " << ringDim << std::endl << std::endl;

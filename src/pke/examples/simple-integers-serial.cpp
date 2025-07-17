@@ -35,6 +35,7 @@
  */
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 // header files needed for serialization
 #include "ciphertext-ser.h"
@@ -60,6 +61,9 @@ int main() {
     cryptoContext->Enable(PKE);
     cryptoContext->Enable(KEYSWITCH);
     cryptoContext->Enable(LEVELEDSHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("simple-integers-serial-trace.txt"));
+    IF_TRACE(cryptoContext->setTracer(std::move(tracer)));
 
     std::cout << "\nThe cryptocontext has been generated." << std::endl;
 

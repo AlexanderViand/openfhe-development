@@ -50,6 +50,7 @@
  */
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 using namespace lbcrypto;
 
@@ -185,6 +186,15 @@ CryptoContext<DCRTPoly> GetCryptoContext(CCParams<CryptoContextCKKSRNS>& paramet
     // Enable features that you wish to use.
     cryptoContext->Enable(PKE);
     cryptoContext->Enable(LEVELEDSHE);
+
+    if (parameters.GetExecutionMode() == EXEC_NOISE_ESTIMATION) {
+        IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("ckks-noise-flooding-noise-estimation-trace.txt"));
+        IF_TRACE(cryptoContext->setTracer(std::move(tracer)));
+    }
+    else {
+        IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("ckks-noise-flooding-evaluation-trace.txt"));
+        IF_TRACE(cryptoContext->setTracer(std::move(tracer)));
+    }
 
     return cryptoContext;
 }

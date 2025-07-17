@@ -38,6 +38,7 @@ Example for CKKS bootstrapping with full packing
 #define PROFILE
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 using namespace lbcrypto;
 
@@ -113,6 +114,9 @@ void SimpleBootstrapExample() {
     cryptoContext->Enable(LEVELEDSHE);
     cryptoContext->Enable(ADVANCEDSHE);
     cryptoContext->Enable(FHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("simple-ckks-bootstrapping-trace.txt"));
+    IF_TRACE(cryptoContext->setTracer(std::move(tracer)));
 
     usint ringDim = cryptoContext->GetRingDimension();
     // This is the maximum number of slots that can be used for full packing.
