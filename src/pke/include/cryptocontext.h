@@ -3216,12 +3216,17 @@ public:
     */
     std::vector<Ciphertext<Element>> MultipartyDecryptLead(const std::vector<Ciphertext<Element>>& ciphertextVec,
                                                            const PrivateKey<Element> privateKey) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultipartyDecryptLead"));
+        IF_TRACE(for (const auto& ct : ciphertextVec) t->registerInput(ct, "ciphertext"));
+        IF_TRACE(t->registerInput(privateKey, "privateKey"));
+
         ValidateKey(privateKey);
         std::vector<Ciphertext<Element>> newCiphertextVec;
         for (const auto& ciphertext : ciphertextVec) {
             ValidateCiphertext(ciphertext);
             newCiphertextVec.push_back(GetScheme()->MultipartyDecryptLead(ciphertext, privateKey));
         }
+        IF_TRACE(for (const auto& ct : newCiphertextVec) t->registerOutput(ct, "partialCiphertext"));
         return newCiphertextVec;
     }
 
@@ -3234,12 +3239,17 @@ public:
     */
     std::vector<Ciphertext<Element>> MultipartyDecryptMain(const std::vector<Ciphertext<Element>>& ciphertextVec,
                                                            const PrivateKey<Element> privateKey) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultipartyDecryptMain"));
+        IF_TRACE(for (const auto& ct : ciphertextVec) t->registerInput(ct, "ciphertext"));
+        IF_TRACE(t->registerInput(privateKey, "privateKey"));
+
         ValidateKey(privateKey);
         std::vector<Ciphertext<Element>> newCiphertextVec;
         for (const auto& ciphertext : ciphertextVec) {
             ValidateCiphertext(ciphertext);
             newCiphertextVec.push_back(GetScheme()->MultipartyDecryptMain(ciphertext, privateKey));
         }
+        IF_TRACE(for (const auto& ct : newCiphertextVec) t->registerOutput(ct, "partialCiphertext"));
         return newCiphertextVec;
     }
 

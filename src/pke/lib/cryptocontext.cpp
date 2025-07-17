@@ -466,6 +466,9 @@ Plaintext CryptoContextImpl<Element>::GetPlaintextForDecrypt(PlaintextEncodings 
 template <typename Element>
 DecryptResult CryptoContextImpl<Element>::Decrypt(ConstCiphertext<Element>& ciphertext,
                                                   const PrivateKey<Element>& privateKey, Plaintext* plaintext) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("Decrypt", {ciphertext}));
+    IF_TRACE(t->registerInput(privateKey, "privateKey"));
+
     if (ciphertext == nullptr)
         OPENFHE_THROW("ciphertext is empty");
     if (plaintext == nullptr)
@@ -511,6 +514,7 @@ DecryptResult CryptoContextImpl<Element>::Decrypt(ConstCiphertext<Element>& ciph
     }
 
     *plaintext = std::move(decrypted);
+    IF_TRACE(t->registerOutput(*plaintext, "plaintext"));
     return result;
 }
 
@@ -572,6 +576,9 @@ Plaintext CryptoContextImpl<DCRTPoly>::GetPlaintextForDecrypt(PlaintextEncodings
 template <>
 DecryptResult CryptoContextImpl<DCRTPoly>::Decrypt(ConstCiphertext<DCRTPoly>& ciphertext,
                                                    const PrivateKey<DCRTPoly>& privateKey, Plaintext* plaintext) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("Decrypt", {ciphertext}));
+    IF_TRACE(t->registerInput(privateKey, "privateKey"));
+
     if (ciphertext == nullptr)
         OPENFHE_THROW("ciphertext is empty");
     if (plaintext == nullptr)
@@ -617,12 +624,16 @@ DecryptResult CryptoContextImpl<DCRTPoly>::Decrypt(ConstCiphertext<DCRTPoly>& ci
     }
 
     *plaintext = std::move(decrypted);
+    IF_TRACE(t->registerOutput(*plaintext, "plaintext"));
     return result;
 }
 
 template <>
 DecryptResult CryptoContextImpl<DCRTPoly>::MultipartyDecryptFusion(
     const std::vector<Ciphertext<DCRTPoly>>& partialCiphertextVec, Plaintext* plaintext) const {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultipartyDecryptFusion"));
+    IF_TRACE(for (const auto& ct : partialCiphertextVec) t->registerInput(ct, "partialCiphertext"));
+
     DecryptResult result;
 
     // Make sure we're processing ciphertexts.
@@ -664,6 +675,7 @@ DecryptResult CryptoContextImpl<DCRTPoly>::MultipartyDecryptFusion(
     }
 
     *plaintext = std::move(decrypted);
+    IF_TRACE(t->registerOutput(*plaintext, "plaintext"));
 
     return result;
 }
