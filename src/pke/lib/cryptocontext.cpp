@@ -68,21 +68,25 @@ void CryptoContextImpl<Element>::SetKSTechniqueInScheme() {
 /////////////////////////////////////////
 template <typename Element>
 void CryptoContextImpl<Element>::EvalMultKeyGen(const PrivateKey<Element> key) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalMultKeyGen"));
+    IF_TRACE(t->registerInput(key));
     ValidateKey(key);
     if (CryptoContextImpl<Element>::s_evalMultKeyMap.find(key->GetKeyTag()) ==
         CryptoContextImpl<Element>::s_evalMultKeyMap.end()) {
         // the key is not found in the map, so the key has to be generated
-        CryptoContextImpl<Element>::s_evalMultKeyMap[key->GetKeyTag()] = {GetScheme()->EvalMultKeyGen(key)};
+        CryptoContextImpl<Element>::s_evalMultKeyMap[key->GetKeyTag()] = {REGISTER_IF_TRACE(GetScheme()->EvalMultKeyGen(key))};
     }
 }
 
 template <typename Element>
 void CryptoContextImpl<Element>::EvalMultKeysGen(const PrivateKey<Element> key) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalMultKeysGen"));
+    IF_TRACE(t->registerInput(key));
     ValidateKey(key);
     if (CryptoContextImpl<Element>::s_evalMultKeyMap.find(key->GetKeyTag()) ==
         CryptoContextImpl<Element>::s_evalMultKeyMap.end()) {
         // the key is not found in the map, so the key has to be generated
-        CryptoContextImpl<Element>::s_evalMultKeyMap[key->GetKeyTag()] = GetScheme()->EvalMultKeysGen(key);
+        CryptoContextImpl<Element>::s_evalMultKeyMap[key->GetKeyTag()] = REGISTER_IF_TRACE(GetScheme()->EvalMultKeysGen(key));
     }
 }
 
@@ -129,25 +133,33 @@ void CryptoContextImpl<Element>::InsertEvalMultKey(const std::vector<EvalKey<Ele
 template <typename Element>
 void CryptoContextImpl<Element>::EvalSumKeyGen(const PrivateKey<Element> privateKey,
                                                const PublicKey<Element> publicKey) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalSumKeyGen"));
+    IF_TRACE(t->registerInput(privateKey));
+    IF_TRACE(t->registerInput(publicKey));
     ValidateKey(privateKey);
     if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag()) {
         OPENFHE_THROW("Public key passed to EvalSumKeyGen does not match private key");
     }
 
-    auto&& evalKeys = GetScheme()->EvalSumKeyGen(privateKey, publicKey);
+    auto&& evalKeys = REGISTER_IF_TRACE(GetScheme()->EvalSumKeyGen(privateKey, publicKey));
     CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
 }
 
 template <typename Element>
 std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> CryptoContextImpl<Element>::EvalSumRowsKeyGen(
     const PrivateKey<Element> privateKey, const PublicKey<Element> publicKey, uint32_t rowSize, uint32_t subringDim) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalSumRowsKeyGen"));
+    IF_TRACE(t->registerInput(privateKey));
+    IF_TRACE(t->registerInput(publicKey));
+    IF_TRACE(t->registerInput(rowSize));
+    IF_TRACE(t->registerInput(subringDim));
     ValidateKey(privateKey);
     if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag()) {
         OPENFHE_THROW("Public key passed to EvalSumKeyGen does not match private key");
     }
 
     std::vector<uint32_t> indices;
-    auto&& evalKeys = GetScheme()->EvalSumRowsKeyGen(privateKey, rowSize, subringDim, indices);
+    auto&& evalKeys = REGISTER_IF_TRACE(GetScheme()->EvalSumRowsKeyGen(privateKey, rowSize, subringDim, indices));
     CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
 
     return CryptoContextImpl<Element>::GetPartialEvalAutomorphismKeyMapPtr(privateKey->GetKeyTag(), indices);
@@ -156,13 +168,16 @@ std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> CryptoContextImpl<Element>
 template <typename Element>
 std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> CryptoContextImpl<Element>::EvalSumColsKeyGen(
     const PrivateKey<Element> privateKey, const PublicKey<Element> publicKey) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalSumColsKeyGen"));
+    IF_TRACE(t->registerInput(privateKey));
+    IF_TRACE(t->registerInput(publicKey));
     ValidateKey(privateKey);
     if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag()) {
         OPENFHE_THROW("Public key passed to EvalSumKeyGen does not match private key");
     }
 
     std::vector<uint32_t> indices;
-    auto&& evalKeys = GetScheme()->EvalSumColsKeyGen(privateKey, indices);
+    auto&& evalKeys = REGISTER_IF_TRACE(GetScheme()->EvalSumColsKeyGen(privateKey, indices));
     CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
 
     return CryptoContextImpl<Element>::GetPartialEvalAutomorphismKeyMapPtr(privateKey->GetKeyTag(), indices);
@@ -262,12 +277,16 @@ template <typename Element>
 void CryptoContextImpl<Element>::EvalAtIndexKeyGen(const PrivateKey<Element> privateKey,
                                                    const std::vector<int32_t>& indexList,
                                                    const PublicKey<Element> publicKey) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalAtIndexKeyGen"));
+    IF_TRACE(t->registerInput(privateKey));
+    IF_TRACE(t->registerInput(indexList));
+    IF_TRACE(t->registerInput(publicKey));
     ValidateKey(privateKey);
     if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag()) {
         OPENFHE_THROW("Public key passed to EvalAtIndexKeyGen does not match private key");
     }
 
-    auto&& evalKeys = GetScheme()->EvalAtIndexKeyGen(publicKey, privateKey, indexList);
+    auto&& evalKeys = REGISTER_IF_TRACE(GetScheme()->EvalAtIndexKeyGen(publicKey, privateKey, indexList));
     CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
 }
 
