@@ -36,6 +36,7 @@
 #define PROFILE  // turns on the reporting of timing results
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 #include <vector>
 #include <iostream>
@@ -163,6 +164,9 @@ int main(int argc, char* argv[]) {
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("polynomial-evaluation-high-precision-composite-scaling-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     const auto cryptoParamsCKKSRNS = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(cc->GetCryptoParameters());
     uint32_t compositeDegree       = cryptoParamsCKKSRNS->GetCompositeDegree();

@@ -35,6 +35,7 @@
 
 #include "openfhe.h"
 #include "binfhecontext.h"
+#include "utils/simpletracer.h"
 
 using namespace lbcrypto;
 
@@ -103,6 +104,9 @@ void SwitchCKKSToFHEW() {
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
     cc->Enable(SCHEMESWITCH);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("scheme-switching-ckks-to-fhew-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension();
     std::cout << ", number of slots " << slots << ", and supports a multiplicative depth of " << multDepth << std::endl
@@ -266,6 +270,9 @@ void SwitchFHEWtoCKKS() {
     cc->Enable(ADVANCEDSHE);
     cc->Enable(SCHEMESWITCH);
 
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("scheme-switching-fhew-to-ckks-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
+
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension();
     std::cout << ", number of slots " << slots << ", and supports a multiplicative depth of " << multDepth << std::endl
               << std::endl;
@@ -417,6 +424,9 @@ void FloorViaSchemeSwitching() {
     cc->Enable(ADVANCEDSHE);
     cc->Enable(SCHEMESWITCH);
 
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("scheme-switching-floor-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
+
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension();
     std::cout << ", number of slots " << slots << ", and supports a multiplicative depth of " << multDepth << std::endl
               << std::endl;
@@ -528,6 +538,9 @@ void FuncViaSchemeSwitching() {
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
     cc->Enable(SCHEMESWITCH);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("scheme-switching-func-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension();
     std::cout << ", and number of slots " << slots << std::endl << std::endl;
@@ -676,6 +689,9 @@ void ComparisonViaSchemeSwitching() {
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
     cc->Enable(SCHEMESWITCH);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("scheme-switching-comparison-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension();
     std::cout << ", number of slots " << slots << ", and supports a multiplicative depth of " << multDepth << std::endl
@@ -889,6 +905,9 @@ void ArgminViaSchemeSwitching() {
     cc->Enable(ADVANCEDSHE);
     cc->Enable(SCHEMESWITCH);
 
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("scheme-switching-argmin-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
+
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension();
     std::cout << ", and number of slots " << slots << ", and supports a depth of " << multDepth << std::endl
               << std::endl;
@@ -1018,6 +1037,9 @@ void ArgminViaSchemeSwitchingAlt() {
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
     cc->Enable(SCHEMESWITCH);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("scheme-switching-argmin-alt-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension();
     std::cout << ", and number of slots " << slots << ", and supports a depth of " << multDepth << std::endl
@@ -1151,6 +1173,9 @@ void ArgminViaSchemeSwitchingUnit() {
     cc->Enable(ADVANCEDSHE);
     cc->Enable(SCHEMESWITCH);
     cc->Enable(FHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("scheme-switching-argmin-unit-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension();
     std::cout << ", and number of slots " << slots << ", and supports a depth of " << multDepth << std::endl
@@ -1286,6 +1311,9 @@ void ArgminViaSchemeSwitchingAltUnit() {
     cc->Enable(SCHEMESWITCH);
     cc->Enable(FHE);
 
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("scheme-switching-argmin-alt-unit-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
+
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension();
     std::cout << ", and number of slots " << slots << ", and supports a depth of " << multDepth << std::endl
               << std::endl;
@@ -1416,6 +1444,9 @@ void PolyViaSchemeSwitching() {
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
     cc->Enable(SCHEMESWITCH);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("scheme-switching-poly-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension();
     std::cout << ", number of slots " << slots << ", and supports a multiplicative depth of " << multDepth << std::endl

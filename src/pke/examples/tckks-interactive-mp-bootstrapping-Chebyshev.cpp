@@ -41,6 +41,7 @@ the number of participating parties.
 #define PROFILE
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 using namespace std;
 using namespace lbcrypto;
@@ -160,6 +161,9 @@ void TCKKSCollectiveBoot(enum ScalingTechnique scaleTech) {
     cryptoContext->Enable(LEVELEDSHE);
     cryptoContext->Enable(ADVANCEDSHE);
     cryptoContext->Enable(MULTIPARTY);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("tckks-interactive-mp-bootstrapping-Chebyshev-trace.txt"));
+    IF_TRACE(cryptoContext->setTracer(std::move(tracer)));
 
     usint ringDim = cryptoContext->GetRingDimension();
     // This is the maximum number of slots that can be used for full packing.

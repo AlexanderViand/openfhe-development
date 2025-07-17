@@ -141,6 +141,10 @@ class CryptoContextImpl : public Serializable {
     */
     Plaintext MakePlaintext(const PlaintextEncodings encoding, const std::vector<int64_t>& value, size_t depth,
                             uint32_t level) const {
+        IF_TRACE(auto t_packed = m_tracer->StartFunctionTrace("MakePlaintext"));
+        IF_TRACE(t_packed->registerInput(encoding, "encoding"));
+        IF_TRACE(t_packed->registerInput(value, "value"));
+        IF_TRACE(t_packed->registerInput(depth, "depth"));
         const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRNS>(GetCryptoParameters());
 
         if (level > 0) {
@@ -387,6 +391,11 @@ protected:
     virtual Plaintext MakeCKKSPackedPlaintextInternal(const std::vector<std::complex<double>>& value,
                                                       size_t noiseScaleDeg, uint32_t level,
                                                       const std::shared_ptr<ParmType> params, uint32_t slots) const {
+        IF_TRACE(auto t_ckks = m_tracer->StartFunctionTrace("MakeCKKSPackedPlaintext"));
+        IF_TRACE(t_ckks->registerInput(value, "value"));
+        IF_TRACE(t_ckks->registerInput(noiseScaleDeg, "noiseScaleDeg"));
+        IF_TRACE(t_ckks->registerInput(static_cast<size_t>(level), "level"));
+        IF_TRACE(t_ckks->registerInput(static_cast<size_t>(slots), "slots"));
         VerifyCKKSScheme(__func__);
         const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRNS>(GetCryptoParameters());
         if (level > 0) {
@@ -1257,7 +1266,8 @@ public:
     * @return Generated key pair.
     */
     KeyPair<Element> KeyGen() const {
-        return GetScheme()->KeyGen(GetContextForPointer(this), false);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("KeyGen"));
+        return REGISTER_IF_TRACE(GetScheme()->KeyGen(GetContextForPointer(this), false));
     }
 
     /**
@@ -1267,7 +1277,8 @@ public:
     * @attention Not supported by any crypto scheme currently.
     */
     KeyPair<Element> SparseKeyGen() const {
-        return GetScheme()->KeyGen(GetContextForPointer(this), true);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("SparseKeyGen"));
+        return REGISTER_IF_TRACE(GetScheme()->KeyGen(GetContextForPointer(this), true));
     }
 
     /**
@@ -1389,9 +1400,12 @@ public:
     */
     EvalKey<Element> KeySwitchGen(const PrivateKey<Element>& oldPrivateKey,
                                   const PrivateKey<Element>& newPrivateKey) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("KeySwitchGen"));
+        IF_TRACE(t->registerInput(oldPrivateKey));
+        IF_TRACE(t->registerInput(newPrivateKey));
         ValidateKey(oldPrivateKey);
         ValidateKey(newPrivateKey);
-        return GetScheme()->KeySwitchGen(oldPrivateKey, newPrivateKey);
+        return REGISTER_IF_TRACE(GetScheme()->KeySwitchGen(oldPrivateKey, newPrivateKey));
     }
 
     /**

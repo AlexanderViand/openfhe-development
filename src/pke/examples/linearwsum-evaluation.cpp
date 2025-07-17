@@ -36,6 +36,7 @@
 #define PROFILE  // turns on the reporting of timing results
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 using namespace lbcrypto;
 
@@ -60,6 +61,9 @@ int main(int argc, char* argv[]) {
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("linearwsum-evaluation-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     std::vector<std::vector<std::complex<double>>> input;
 

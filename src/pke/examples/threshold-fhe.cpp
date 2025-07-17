@@ -34,6 +34,7 @@
  */
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 using namespace lbcrypto;
 
@@ -74,6 +75,9 @@ void RunBGVrnsAdditive() {
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
     cc->Enable(MULTIPARTY);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("threshold-fhe-bgvrns-additive-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     ////////////////////////////////////////////////////////////
     // Set-up of parameters
@@ -215,6 +219,9 @@ void RunBFVrns() {
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
     cc->Enable(MULTIPARTY);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("threshold-fhe-bfvrns-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     ////////////////////////////////////////////////////////////
     // Set-up of parameters
@@ -428,6 +435,9 @@ void RunCKKS() {
     cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
     cc->Enable(MULTIPARTY);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("threshold-fhe-ckks-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     ////////////////////////////////////////////////////////////
     // Set-up of parameters

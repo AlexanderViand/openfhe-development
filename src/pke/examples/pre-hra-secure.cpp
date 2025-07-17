@@ -35,6 +35,7 @@
 
 #define PROFILE  // for TIC TOC
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 using namespace lbcrypto;
 
@@ -93,6 +94,9 @@ bool run_demo_pre(void) {
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
     cc->Enable(PRE);
+
+    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("pre-hra-secure-trace.txt"));
+    IF_TRACE(cc->setTracer(std::move(tracer)));
 
     std::cout << "p = " << cc->GetCryptoParameters()->GetPlaintextModulus() << std::endl;
     std::cout << "n = " << cc->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder() / 2 << std::endl;
