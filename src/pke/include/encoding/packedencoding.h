@@ -238,6 +238,40 @@ private:
    */
     template <typename P>
     void Unpack(P* ring, const PlaintextModulus& modulus) const;
+
+public:
+    /**
+     * Serialize the PackedEncoding object
+     * @param ar Archive to serialize to
+     * @param version Version of the serialization
+     */
+    template <class Archive>
+    void save(Archive& ar, std::uint32_t const version) const {
+        ar(cereal::base_class<PlaintextImpl>(this));
+        ar(cereal::make_nvp("v", value));
+    }
+
+    /**
+     * Deserialize the PackedEncoding object
+     * @param ar Archive to deserialize from
+     * @param version Version of the serialization
+     */
+    template <class Archive>
+    void load(Archive& ar, std::uint32_t const version) {
+        if (version > SerializedVersion())
+            OPENFHE_THROW("serialized object version " + std::to_string(version) +
+                          " is from a later version of the library");
+        ar(cereal::base_class<PlaintextImpl>(this));
+        ar(cereal::make_nvp("v", value));
+    }
+
+    /**
+     * Get the version of the serialized object for PackedEncoding
+     * @return Version number for serialization
+     */
+    static uint32_t SerializedVersion() {
+        return 1;
+    }
 };
 
 }  // namespace lbcrypto

@@ -419,6 +419,93 @@ public:
     virtual std::string GetFormattedValues(int64_t precision) const {
         OPENFHE_THROW("not implemented");
     }
+
+public:
+    /**
+     * Serialize the plaintext object
+     * @param ar Archive to serialize to
+     * @param version Version of the serialization
+    */
+    template <class Archive>
+    void save(Archive& ar, std::uint32_t const version) const {
+        ar(cereal::make_nvp("ie", isEncoded));
+        ar(cereal::make_nvp("tf", typeFlag));
+        ar(cereal::make_nvp("ep", encodingParams));
+
+        // Serialize the appropriate encoded vector based on type
+        if (typeFlag == IsPoly) {
+            ar(cereal::make_nvp("ev", encodedVector));
+        }
+        else if (typeFlag == IsNativePoly) {
+            ar(cereal::make_nvp("env", encodedNativeVector));
+        }
+        else if (typeFlag == IsDCRTPoly) {
+            ar(cereal::make_nvp("ev", encodedVector));
+            ar(cereal::make_nvp("evd", encodedVectorDCRT));
+        }
+
+        ar(cereal::make_nvp("pe", ptxtEncoding));
+        ar(cereal::make_nvp("sid", schemeID));
+        ar(cereal::make_nvp("cdt", ckksDataType));
+        ar(cereal::make_nvp("sf", scalingFactor));
+        ar(cereal::make_nvp("sfi", scalingFactorInt));
+        ar(cereal::make_nvp("l", level));
+        ar(cereal::make_nvp("nsd", noiseScaleDeg));
+        ar(cereal::make_nvp("s", slots));
+    }
+
+    /**
+     * Deserialize the plaintext object
+     * @param ar Archive to deserialize from
+     * @param version Version of the serialization
+     */
+    template <class Archive>
+    void load(Archive& ar, std::uint32_t const version) {
+        if (version > SerializedVersion())
+            OPENFHE_THROW("serialized object version " + std::to_string(version) +
+                          " is from a later version of the library");
+
+        ar(cereal::make_nvp("ie", isEncoded));
+        ar(cereal::make_nvp("tf", typeFlag));
+        ar(cereal::make_nvp("ep", encodingParams));
+
+        // Deserialize the appropriate encoded vector based on type
+        if (typeFlag == IsPoly) {
+            ar(cereal::make_nvp("ev", encodedVector));
+        }
+        else if (typeFlag == IsNativePoly) {
+            ar(cereal::make_nvp("env", encodedNativeVector));
+        }
+        else if (typeFlag == IsDCRTPoly) {
+            ar(cereal::make_nvp("ev", encodedVector));
+            ar(cereal::make_nvp("evd", encodedVectorDCRT));
+        }
+
+        ar(cereal::make_nvp("pe", ptxtEncoding));
+        ar(cereal::make_nvp("sid", schemeID));
+        ar(cereal::make_nvp("cdt", ckksDataType));
+        ar(cereal::make_nvp("sf", scalingFactor));
+        ar(cereal::make_nvp("sfi", scalingFactorInt));
+        ar(cereal::make_nvp("l", level));
+        ar(cereal::make_nvp("nsd", noiseScaleDeg));
+        ar(cereal::make_nvp("s", slots));
+    }
+
+    /**
+     * Get the name of the serialized object
+     * @return Object name for serialization
+     */
+    std::string SerializedObjectName() const {
+        return "Plaintext";
+    }
+
+    /**
+     * Get the version of the serialized object
+     * @return Version number for serialization
+     */
+    static uint32_t SerializedVersion() {
+        return 1;
+    }
 };
 
 inline bool operator==(const Plaintext& p1, const Plaintext& p2) {

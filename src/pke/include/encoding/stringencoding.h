@@ -48,6 +48,11 @@ class StringEncoding : public PlaintextImpl {
     // enum EncodingType { CHAR7bit } encoding = CHAR7bit;
 
 public:
+    /**
+     * @brief Default empty constructor for serialization
+     */
+    StringEncoding() : PlaintextImpl(std::shared_ptr<Poly::Params>(0), nullptr, STRING_ENCODING) {}
+
     // these three constructors are used inside of Decrypt
     template <typename T, typename std::enable_if<std::is_same<T, Poly::Params>::value ||
                                                       std::is_same<T, NativePoly::Params>::value ||
@@ -123,6 +128,40 @@ protected:
     */
     void PrintValue(std::ostream& out) const override {
         out << ptx;
+    }
+
+public:
+    /**
+     * Serialize the StringEncoding object
+     * @param ar Archive to serialize to
+     * @param version Version of the serialization
+     */
+    template <class Archive>
+    void save(Archive& ar, std::uint32_t const version) const {
+        ar(cereal::base_class<PlaintextImpl>(this));
+        ar(cereal::make_nvp("ptx", ptx));
+    }
+
+    /**
+     * Deserialize the StringEncoding object
+     * @param ar Archive to deserialize from
+     * @param version Version of the serialization
+     */
+    template <class Archive>
+    void load(Archive& ar, std::uint32_t const version) {
+        if (version > SerializedVersion())
+            OPENFHE_THROW("serialized object version " + std::to_string(version) +
+                          " is from a later version of the library");
+        ar(cereal::base_class<PlaintextImpl>(this));
+        ar(cereal::make_nvp("ptx", ptx));
+    }
+
+    /**
+     * Get the version of the serialized object for StringEncoding
+     * @return Version number for serialization
+     */
+    static uint32_t SerializedVersion() {
+        return 1;
     }
 };
 
