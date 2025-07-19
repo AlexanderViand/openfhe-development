@@ -116,6 +116,10 @@ private:
         ss << value;
     }
 
+    void formatVectorElement(std::stringstream& ss, double value) {
+        ss << value;
+    }
+
     void formatVectorElement(std::stringstream& ss, const std::complex<double>& value) {
         ss << "(" << value.real();
         if (value.imag() >= 0)
@@ -201,6 +205,16 @@ public:
         std::vector<int64_t> converted(values.begin(), values.end());
         m_inputs.push_back(name + " " + formatVector(converted, "vector<int32_t>"));
     }
+    void registerInput(const std::vector<uint32_t>& values, std::string name = "", bool isMutable = false) override {
+        std::vector<int64_t> converted;
+        for (auto val : values) {
+            converted.push_back(static_cast<int64_t>(val));
+        }
+        m_inputs.push_back(name + " " + formatVector(converted, "vector<uint32_t>"));
+    }
+    void registerInput(const std::vector<double>& values, std::string name = "", bool isMutable = false) override {
+        m_inputs.push_back(name + " " + formatVector(values, "vector<double>"));
+    }
     void registerInput(double value, std::string name = "", bool isMutable = false) override {
         m_inputs.push_back(name + " " + std::to_string(value) + " : double");
     }
@@ -217,6 +231,9 @@ public:
     }
     void registerInput(size_t value, std::string name = "", bool isMutable = false) override {
         m_inputs.push_back(name + " " + std::to_string(value) + " : size_t");
+    }
+    void registerInput(bool value, std::string name = "", bool isMutable = false) override {
+        m_inputs.push_back(name + " " + (value ? "true" : "false") + " : bool");
     }
     void registerInput(void* ptr, std::string name = "", bool isMutable = false) override {
         std::stringstream ss;
@@ -283,6 +300,36 @@ public:
         ss << "] : vector<EvalKey>";
         m_outputs.push_back(ss.str());
         return evalKeys;
+    }
+    std::vector<Ciphertext<Element>> registerOutput(std::vector<Ciphertext<Element>> ciphertexts,
+                                                    std::string name = "") override {
+        std::stringstream ss;
+        ss << name << " [";
+        for (size_t i = 0; i < ciphertexts.size(); ++i) {
+            if (i > 0)
+                ss << ", ";
+            // Hash each ciphertext individually
+            std::stringstream serialStream;
+            Serial::Serialize(ciphertexts[i], serialStream, SerType::BINARY);
+            const std::string hash = HashUtil::HashString(serialStream.str());
+
+            auto hashIt = m_tracer->m_uniqueID.find(hash);
+            if (hashIt != m_tracer->m_uniqueID.end()) {
+                ss << hashIt->second;
+            }
+            else {
+                std::string id             = generateObjectId("ciphertext");
+                m_tracer->m_uniqueID[hash] = id;
+                ss << id;
+            }
+            if (i >= 10) {
+                ss << ", ...(" << (ciphertexts.size() - i - 1) << " more)";
+                break;
+            }
+        }
+        ss << "] : vector<Ciphertext>";
+        m_outputs.push_back(ss.str());
+        return ciphertexts;
     }
     std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> registerOutput(
         std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap, std::string name = "") override {

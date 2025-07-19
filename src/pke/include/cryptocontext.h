@@ -2367,6 +2367,9 @@ public:
     */
     std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> EvalAutomorphismKeyGen(
         const PrivateKey<Element> privateKey, const std::vector<uint32_t>& indexList) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalAutomorphismKeyGen"));
+        IF_TRACE(t->registerInput(privateKey));
+        IF_TRACE(t->registerInput(indexList));
         ValidateKey(privateKey);
         if (!indexList.size())
             OPENFHE_THROW("Input index vector is empty");
@@ -2380,7 +2383,7 @@ public:
         auto evalKeys = GetScheme()->EvalAutomorphismKeyGen(privateKey, newIndices);
         CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
 
-        return evalKeys;
+        return REGISTER_IF_TRACE(t, evalKeys);
     }
 
     [[deprecated(
@@ -2920,8 +2923,12 @@ public:
     */
     Ciphertext<Element> EvalChebyshevSeries(ConstCiphertext<Element>& ciphertext,
                                             const std::vector<double>& coefficients, double a, double b) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalChebyshevSeries", {ciphertext}));
+        IF_TRACE(t->registerInput(coefficients, "coefficients"));
+        IF_TRACE(t->registerInput(a, "a"));
+        IF_TRACE(t->registerInput(b, "b"));
         ValidateCiphertext(ciphertext);
-        return GetScheme()->EvalChebyshevSeries(ciphertext, coefficients, a, b);
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalChebyshevSeries(ciphertext, coefficients, a, b));
     }
 
     /**
@@ -2936,8 +2943,12 @@ public:
     */
     Ciphertext<Element> EvalChebyshevSeriesLinear(ConstCiphertext<Element>& ciphertext,
                                                   const std::vector<double>& coefficients, double a, double b) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalChebyshevSeriesLinear", {ciphertext}));
+        IF_TRACE(t->registerInput(coefficients, "coefficients"));
+        IF_TRACE(t->registerInput(a, "a"));
+        IF_TRACE(t->registerInput(b, "b"));
         ValidateCiphertext(ciphertext);
-        return GetScheme()->EvalChebyshevSeriesLinear(ciphertext, coefficients, a, b);
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalChebyshevSeriesLinear(ciphertext, coefficients, a, b));
     }
 
     /**
@@ -2952,8 +2963,12 @@ public:
     */
     Ciphertext<Element> EvalChebyshevSeriesPS(ConstCiphertext<Element>& ciphertext,
                                               const std::vector<double>& coefficients, double a, double b) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalChebyshevSeriesPS", {ciphertext}));
+        IF_TRACE(t->registerInput(coefficients, "coefficients"));
+        IF_TRACE(t->registerInput(a, "a"));
+        IF_TRACE(t->registerInput(b, "b"));
         ValidateCiphertext(ciphertext);
-        return GetScheme()->EvalChebyshevSeriesPS(ciphertext, coefficients, a, b);
+        return REGISTER_IF_TRACE(t, GetScheme()->EvalChebyshevSeriesPS(ciphertext, coefficients, a, b));
     }
 
     /**
@@ -3159,10 +3174,13 @@ public:
     * @return Re-encryption evaluation key.
     */
     EvalKey<Element> ReKeyGen(const PrivateKey<Element> oldPrivateKey, const PublicKey<Element> newPublicKey) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("ReKeyGen"));
+        IF_TRACE(t->registerInput(oldPrivateKey, "oldPrivateKey"));
+        IF_TRACE(t->registerInput(newPublicKey, "newPublicKey"));
         ValidateKey(oldPrivateKey);
         ValidateKey(newPublicKey);
 
-        return GetScheme()->ReKeyGen(oldPrivateKey, newPublicKey);
+        return REGISTER_IF_TRACE(t, GetScheme()->ReKeyGen(oldPrivateKey, newPublicKey));
     }
 
     /**
@@ -3206,9 +3224,11 @@ public:
     * @attention Only for debugging purposes. Not for production use.
     */
     KeyPair<Element> MultipartyKeyGen(const std::vector<PrivateKey<Element>>& privateKeyVec) {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultipartyKeyGen"));
+        IF_TRACE(for (const auto& key : privateKeyVec) t->registerInput(key));
         if (!privateKeyVec.size())
             OPENFHE_THROW("Input private key vector is empty");
-        return GetScheme()->MultipartyKeyGen(GetContextForPointer(this), privateKeyVec, false);
+        return REGISTER_IF_TRACE(t, GetScheme()->MultipartyKeyGen(GetContextForPointer(this), privateKeyVec, false));
     }
 
     /**
@@ -3220,9 +3240,13 @@ public:
     * @return Key pair containing this party's private key and the updated joined public key.
     */
     KeyPair<Element> MultipartyKeyGen(const PublicKey<Element> publicKey, bool makeSparse = false, bool fresh = false) {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultipartyKeyGen"));
+        IF_TRACE(t->registerInput(publicKey));
+        IF_TRACE(t->registerInput(makeSparse, "makeSparse"));
+        IF_TRACE(t->registerInput(fresh, "fresh"));
         if (!publicKey)
             OPENFHE_THROW("Input public key is empty");
-        return GetScheme()->MultipartyKeyGen(GetContextForPointer(this), publicKey, makeSparse, fresh);
+        return REGISTER_IF_TRACE(t, GetScheme()->MultipartyKeyGen(GetContextForPointer(this), publicKey, makeSparse, fresh));
     }
 
     /**
