@@ -418,6 +418,12 @@ public:
         m_outputs.push_back(name + " \"" + value + "\" : string");
         return value;
     }
+    Element registerOutput(Element element, std::string name = "") override {
+        // For Element type, just return the element as-is without detailed logging
+        // since Element is a complex polynomial type
+        m_outputs.push_back(name + " [Element] : " + typeid(Element).name());
+        return element;
+    }
 
 private:
     void printList(const std::vector<std::string>& list, const std::string& label) const {

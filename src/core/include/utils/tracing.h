@@ -135,6 +135,7 @@ struct FunctionTracer {
     virtual PublicKey<Element> registerOutput(PublicKey<Element> publicKey, std::string name = "")    = 0;
     virtual PrivateKey<Element> registerOutput(PrivateKey<Element> privateKey, std::string name = "") = 0;
     virtual std::string registerOutput(const std::string& value, std::string name = "")               = 0;
+    virtual Element registerOutput(Element element, std::string name = "")                            = 0;
 };
 
 template <typename Element>
@@ -246,6 +247,9 @@ public:
     }
     virtual std::string registerOutput(const std::string& value, std::string) override {
         return value;
+    }
+    virtual Element registerOutput(Element element, std::string) override {
+        return element;
     }
 };
 

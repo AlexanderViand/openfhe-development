@@ -1418,7 +1418,9 @@ public:
     Ciphertext<Element> KeySwitch(ConstCiphertext<Element>& ciphertext, const EvalKey<Element>& evalKey) const {
         ValidateCiphertext(ciphertext);
         ValidateKey(evalKey);
-        return GetScheme()->KeySwitch(ciphertext, evalKey);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("KeySwitch", {ciphertext}));
+        IF_TRACE(t->registerInput(evalKey));
+        return REGISTER_IF_TRACE(GetScheme()->KeySwitch(ciphertext, evalKey));
     }
 
     /**
@@ -1430,7 +1432,11 @@ public:
     void KeySwitchInPlace(Ciphertext<Element>& ciphertext, const EvalKey<Element>& evalKey) const {
         ValidateCiphertext(ciphertext);
         ValidateKey(evalKey);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("KeySwitchInPlace", {ciphertext}));
+        IF_TRACE(t->registerInput(ciphertext));
+        IF_TRACE(t->registerInput(evalKey));
         GetScheme()->KeySwitchInPlace(ciphertext, evalKey);
+        IF_TRACE(t->registerOutput(ciphertext));
     }
 
     //------------------------------------------------------------------------------
@@ -2292,7 +2298,10 @@ public:
     void EvalMultInPlace(Ciphertext<Element>& ciphertext, double scalar) const {
         if (!ciphertext)
             OPENFHE_THROW("Input ciphertext is nullptr");
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalMultInPlace", {ciphertext}));
+        IF_TRACE(t->registerInput(scalar));
         GetScheme()->EvalMultInPlace(ciphertext, scalar);
+        IF_TRACE(t->registerOutput(ciphertext));
     }
 
     /**
@@ -2341,7 +2350,10 @@ public:
     void EvalMultInPlace(Ciphertext<Element>& ciphertext, std::complex<double> scalar) const {
         if (!ciphertext)
             OPENFHE_THROW("Input ciphertext is nullptr");
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalMultInPlace", {ciphertext}));
+        IF_TRACE(t->registerInput(scalar));
         GetScheme()->EvalMultInPlace(ciphertext, scalar);
+        IF_TRACE(t->registerOutput(ciphertext));
     }
 
     /**
@@ -2419,7 +2431,10 @@ public:
         auto evalKey = key->second;
         ValidateKey(evalKey);
 
-        return GetScheme()->EvalAutomorphism(ciphertext, i, evalKeyMap);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalAutomorphism", {ciphertext}));
+        // IF_TRACE(t->registerInput(i, "index")); // FIXME: register map + index
+        IF_TRACE(t->registerInput(evalKey, "evalKey"));  //FIXME: register map + index
+        return REGISTER_IF_TRACE(GetScheme()->EvalAutomorphism(ciphertext, i, evalKeyMap));
     }
 
     /**
@@ -2488,6 +2503,8 @@ public:
     * @return Pointer to precomputed rotation data.
     */
     std::shared_ptr<std::vector<Element>> EvalFastRotationPrecompute(ConstCiphertext<Element>& ciphertext) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalFastRotationPrecompute", {ciphertext}));
+        // return REGISTER_IF_TRACE(GetScheme()->EvalFastRotationPrecompute(ciphertext)); //FIXME: add support for type
         return GetScheme()->EvalFastRotationPrecompute(ciphertext);
     }
 
@@ -2537,8 +2554,12 @@ public:
     */
     Ciphertext<Element> EvalFastRotationExt(ConstCiphertext<Element>& ciphertext, uint32_t index,
                                             const std::shared_ptr<std::vector<Element>> digits, bool addFirst) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalFastRotationExt", {ciphertext}));
+        IF_TRACE(t->registerInput(static_cast<size_t>(index), "index"));
+        // IF_TRACE(t->registerInput(digits, "digits"));  // FIXME: add support for type
+        IF_TRACE(t->registerInput(addFirst, "addFirst"));
         auto evalKeyMap = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ciphertext->GetKeyTag());
-        return GetScheme()->EvalFastRotationExt(ciphertext, index, digits, addFirst, evalKeyMap);
+        return REGISTER_IF_TRACE(GetScheme()->EvalFastRotationExt(ciphertext, index, digits, addFirst, evalKeyMap));
     }
 
     /**
@@ -2548,7 +2569,8 @@ public:
     * @return Scaled ciphertext in basis Q.
     */
     Ciphertext<Element> KeySwitchDown(ConstCiphertext<Element>& ciphertext) const {
-        return GetScheme()->KeySwitchDown(ciphertext);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("KeySwitchDown", {ciphertext}));
+        return REGISTER_IF_TRACE(GetScheme()->KeySwitchDown(ciphertext));
     }
 
     /**
@@ -2558,7 +2580,8 @@ public:
     * @return Scaled polynomial c0 in basis Q.
     */
     Element KeySwitchDownFirstElement(ConstCiphertext<Element>& ciphertext) const {
-        return GetScheme()->KeySwitchDownFirstElement(ciphertext);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("KeySwitchDownFirstElement", {ciphertext}));
+        return REGISTER_IF_TRACE(GetScheme()->KeySwitchDownFirstElement(ciphertext));
     }
 
     /**
@@ -2569,7 +2592,9 @@ public:
     * @return Extended ciphertext in basis P*Q.
     */
     Ciphertext<Element> KeySwitchExt(ConstCiphertext<Element>& ciphertext, bool addFirst) const {
-        return GetScheme()->KeySwitchExt(ciphertext, addFirst);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("KeySwitchExt", {ciphertext}));
+        IF_TRACE(t->registerInput(addFirst, "addFirst"));
+        return REGISTER_IF_TRACE(GetScheme()->KeySwitchExt(ciphertext, addFirst));
     }
 
     /**
@@ -3339,7 +3364,11 @@ public:
             OPENFHE_THROW("Input second private key is nullptr");
         if (!evalKey)
             OPENFHE_THROW("Input evaluation key is nullptr");
-        return GetScheme()->MultiKeySwitchGen(originalPrivateKey, newPrivateKey, evalKey);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultiKeySwitchGen"));
+        IF_TRACE(t->registerInput(originalPrivateKey, "originalPrivateKey"));
+        IF_TRACE(t->registerInput(newPrivateKey, "newPrivateKey"));
+        IF_TRACE(t->registerInput(evalKey, "evalKey"));
+        return REGISTER_IF_TRACE(GetScheme()->MultiKeySwitchGen(originalPrivateKey, newPrivateKey, evalKey));
     }
 
     /**
@@ -3451,7 +3480,11 @@ public:
             OPENFHE_THROW("Input private key is nullptr");
         if (!evalKey)
             OPENFHE_THROW("Input evaluation key is nullptr");
-        return GetScheme()->MultiMultEvalKey(privateKey, evalKey, keyTag);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultiMultEvalKey"));
+        IF_TRACE(t->registerInput(privateKey, "privateKey"));
+        IF_TRACE(t->registerInput(evalKey, "evalKey"));
+        IF_TRACE(t->registerInput(keyTag, "keyTag"));
+        return REGISTER_IF_TRACE(GetScheme()->MultiMultEvalKey(privateKey, evalKey, keyTag));
     }
 
     /**
@@ -3555,7 +3588,10 @@ public:
                                        ConstCiphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
         ValidateKey(privateKey);
-        return GetScheme()->IntBootDecrypt(privateKey, ciphertext);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("IntBootDecrypt"));
+        IF_TRACE(t->registerInput(privateKey, "privateKey"));
+        IF_TRACE(t->registerInput(ciphertext, "ciphertext"));
+        return REGISTER_IF_TRACE(GetScheme()->IntBootDecrypt(privateKey, ciphertext));
     }
 
     /**
@@ -3569,7 +3605,10 @@ public:
     Ciphertext<Element> IntBootEncrypt(const PublicKey<Element> publicKey, ConstCiphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
         ValidateKey(publicKey);
-        return GetScheme()->IntBootEncrypt(publicKey, ciphertext);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("IntBootEncrypt"));
+        IF_TRACE(t->registerInput(publicKey, "publicKey"));
+        IF_TRACE(t->registerInput(ciphertext, "ciphertext"));
+        return REGISTER_IF_TRACE(GetScheme()->IntBootEncrypt(publicKey, ciphertext));
     }
 
     /**
@@ -3583,7 +3622,10 @@ public:
     Ciphertext<Element> IntBootAdd(ConstCiphertext<Element>& ciphertext1, ConstCiphertext<Element>& ciphertext2) const {
         ValidateCiphertext(ciphertext1);
         ValidateCiphertext(ciphertext2);
-        return GetScheme()->IntBootAdd(ciphertext1, ciphertext2);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("IntBootAdd"));
+        IF_TRACE(t->registerInput(ciphertext1, "ciphertext1"));
+        IF_TRACE(t->registerInput(ciphertext2, "ciphertext2"));
+        return REGISTER_IF_TRACE(GetScheme()->IntBootAdd(ciphertext1, ciphertext2));
     }
 
     /**
@@ -3597,7 +3639,9 @@ public:
     */
     Ciphertext<Element> IntBootAdjustScale(ConstCiphertext<Element>& ciphertext) const {
         ValidateCiphertext(ciphertext);
-        return GetScheme()->IntBootAdjustScale(ciphertext);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("IntBootAdjustScale"));
+        IF_TRACE(t->registerInput(ciphertext, "ciphertext"));
+        return REGISTER_IF_TRACE(GetScheme()->IntBootAdjustScale(ciphertext));
     }
 
     /**
@@ -3706,6 +3750,12 @@ public:
     */
     void EvalBootstrapSetup(std::vector<uint32_t> levelBudget = {5, 4}, std::vector<uint32_t> dim1 = {0, 0},
                             uint32_t slots = 0, uint32_t correctionFactor = 0, bool precompute = true) {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalBootstrapSetup"));
+        IF_TRACE(t->registerInput(levelBudget, "levelBudget"));
+        IF_TRACE(t->registerInput(dim1, "dim1"));
+        IF_TRACE(t->registerInput(slots, "slots"));
+        IF_TRACE(t->registerInput(correctionFactor, "correctionFactor"));
+        IF_TRACE(t->registerInput(precompute, "precompute"));
         GetScheme()->EvalBootstrapSetup(*this, levelBudget, dim1, slots, correctionFactor, precompute);
     }
     /**
@@ -3753,6 +3803,8 @@ public:
     //------------------------------------------------------------------------------
     // Scheme switching Methods
     //------------------------------------------------------------------------------
+
+    // FIXME: add tracing to scheme-switching methods
 
     /**
     * Scheme switching between CKKS and FHEW functionality
