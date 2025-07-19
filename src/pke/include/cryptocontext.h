@@ -2797,6 +2797,8 @@ public:
     *       Otherwise, it throws an error
     */
     Ciphertext<Element> EvalMultMany(const std::vector<Ciphertext<Element>>& ciphertextVec) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalMultMany"));
+        IF_TRACE(for (const auto& ct : ciphertextVec) t->registerInput(ct, "ciphertext"));
         if (!ciphertextVec.size())
             OPENFHE_THROW("Empty input ciphertext vector");
         if (ciphertextVec.size() == 1)
@@ -2804,7 +2806,7 @@ public:
         const auto evalKeyVec = CryptoContextImpl<Element>::GetEvalMultKeyVector(ciphertextVec[0]->GetKeyTag());
         if (evalKeyVec.size() < (ciphertextVec[0]->NumberCiphertextElements() - 2))
             OPENFHE_THROW("Insufficient value was used for maxRelinSkDeg to generate keys");
-        return GetScheme()->EvalMultMany(ciphertextVec, evalKeyVec);
+        return REGISTER_IF_TRACE(GetScheme()->EvalMultMany(ciphertextVec, evalKeyVec));
     }
 
     //------------------------------------------------------------------------------
@@ -2820,7 +2822,10 @@ public:
     */
     Ciphertext<Element> EvalLinearWSum(std::vector<ReadOnlyCiphertext<Element>>& ciphertextVec,
                                        const std::vector<double>& constantVec) const {
-        return GetScheme()->EvalLinearWSum(ciphertextVec, constantVec);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalLinearWSum"));
+        IF_TRACE(for (const auto& ct : ciphertextVec) t->registerInput(ct, "ciphertext"));
+        IF_TRACE(t->registerInput(constantVec, "constantVec"));
+        return REGISTER_IF_TRACE(GetScheme()->EvalLinearWSum(ciphertextVec, constantVec));
     }
 
     /**
@@ -2844,7 +2849,10 @@ public:
     */
     Ciphertext<Element> EvalLinearWSumMutable(std::vector<Ciphertext<Element>>& ciphertextVec,
                                               const std::vector<double>& constantsVec) const {
-        return GetScheme()->EvalLinearWSumMutable(ciphertextVec, constantsVec);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalLinearWSumMutable"));
+        IF_TRACE(for (const auto& ct : ciphertextVec) t->registerInput(ct, "ciphertext"));
+        IF_TRACE(t->registerInput(constantsVec, "constantsVec"));
+        return REGISTER_IF_TRACE(GetScheme()->EvalLinearWSumMutable(ciphertextVec, constantsVec));
     }
 
     /**
@@ -2873,8 +2881,10 @@ public:
     */
     virtual Ciphertext<Element> EvalPoly(ConstCiphertext<Element>& ciphertext,
                                          const std::vector<double>& coefficients) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalPoly", {ciphertext}));
+        IF_TRACE(t->registerInput(coefficients, "coefficients"));
         ValidateCiphertext(ciphertext);
-        return GetScheme()->EvalPoly(ciphertext, coefficients);
+        return REGISTER_IF_TRACE(GetScheme()->EvalPoly(ciphertext, coefficients));
     }
 
     /**
@@ -2887,8 +2897,10 @@ public:
     */
     Ciphertext<Element> EvalPolyLinear(ConstCiphertext<Element>& ciphertext,
                                        const std::vector<double>& coefficients) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalPolyLinear", {ciphertext}));
+        IF_TRACE(t->registerInput(coefficients, "coefficients"));
         ValidateCiphertext(ciphertext);
-        return GetScheme()->EvalPolyLinear(ciphertext, coefficients);
+        return REGISTER_IF_TRACE(GetScheme()->EvalPolyLinear(ciphertext, coefficients));
     }
 
     /**
@@ -2901,8 +2913,10 @@ public:
     */
     Ciphertext<Element> EvalPolyPS(ConstCiphertext<Element>& ciphertext,
                                    const std::vector<double>& coefficients) const {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalPolyPS", {ciphertext}));
+        IF_TRACE(t->registerInput(coefficients, "coefficients"));
         ValidateCiphertext(ciphertext);
-        return GetScheme()->EvalPolyPS(ciphertext, coefficients);
+        return REGISTER_IF_TRACE(GetScheme()->EvalPolyPS(ciphertext, coefficients));
     }
 
     //------------------------------------------------------------------------------
@@ -3340,13 +3354,18 @@ public:
     std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> MultiEvalAutomorphismKeyGen(
         const PrivateKey<Element> privateKey, const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap,
         const std::vector<uint32_t>& indexList, const std::string& keyTag = "") {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultiEvalAutomorphismKeyGen"));
+        IF_TRACE(t->registerInput(privateKey, "privateKey"));
+        IF_TRACE(t->registerInput(evalKeyMap, "evalKeyMap"));
+        IF_TRACE(t->registerInput(indexList, "indexList"));
+        IF_TRACE(t->registerInput(keyTag, "keyTag"));
         if (!privateKey)
             OPENFHE_THROW("Input private key is nullptr");
         if (!evalKeyMap)
             OPENFHE_THROW("Input evaluation key map is nullptr");
         if (!indexList.size())
             OPENFHE_THROW("Input index vector is empty");
-        return GetScheme()->MultiEvalAutomorphismKeyGen(privateKey, evalKeyMap, indexList, keyTag);
+        return REGISTER_IF_TRACE(GetScheme()->MultiEvalAutomorphismKeyGen(privateKey, evalKeyMap, indexList, keyTag));
     }
 
     /**
@@ -3361,13 +3380,18 @@ public:
     std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> MultiEvalAtIndexKeyGen(
         const PrivateKey<Element> privateKey, const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap,
         const std::vector<int32_t>& indexList, const std::string& keyTag = "") {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultiEvalAtIndexKeyGen"));
+        IF_TRACE(t->registerInput(privateKey, "privateKey"));
+        IF_TRACE(t->registerInput(evalKeyMap, "evalKeyMap"));
+        IF_TRACE(t->registerInput(indexList, "indexList"));
+        IF_TRACE(t->registerInput(keyTag, "keyTag"));
         if (!privateKey)
             OPENFHE_THROW("Input private key is nullptr");
         if (!evalKeyMap)
             OPENFHE_THROW("Input evaluation key map is nullptr");
         if (!indexList.size())
             OPENFHE_THROW("Input index vector is empty");
-        return GetScheme()->MultiEvalAtIndexKeyGen(privateKey, evalKeyMap, indexList, keyTag);
+        return REGISTER_IF_TRACE(GetScheme()->MultiEvalAtIndexKeyGen(privateKey, evalKeyMap, indexList, keyTag));
     }
 
     /**
@@ -3381,11 +3405,15 @@ public:
     std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> MultiEvalSumKeyGen(
         const PrivateKey<Element> privateKey, const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap,
         const std::string& keyTag = "") {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultiEvalSumKeyGen"));
+        IF_TRACE(t->registerInput(privateKey, "privateKey"));
+        IF_TRACE(t->registerInput(evalKeyMap, "evalKeyMap"));
+        IF_TRACE(t->registerInput(keyTag, "keyTag"));
         if (!privateKey)
             OPENFHE_THROW("Input private key is nullptr");
         if (!evalKeyMap)
             OPENFHE_THROW("Input evaluation key map is nullptr");
-        return GetScheme()->MultiEvalSumKeyGen(privateKey, evalKeyMap, keyTag);
+        return REGISTER_IF_TRACE(GetScheme()->MultiEvalSumKeyGen(privateKey, evalKeyMap, keyTag));
     }
 
     /**
@@ -3398,11 +3426,15 @@ public:
     */
     EvalKey<Element> MultiAddEvalKeys(EvalKey<Element> evalKey1, EvalKey<Element> evalKey2,
                                       const std::string& keyTag = "") {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultiAddEvalKeys"));
+        IF_TRACE(t->registerInput(evalKey1, "evalKey1"));
+        IF_TRACE(t->registerInput(evalKey2, "evalKey2"));
+        IF_TRACE(t->registerInput(keyTag, "keyTag"));
         if (!evalKey1)
             OPENFHE_THROW("Input first evaluation key is nullptr");
         if (!evalKey2)
             OPENFHE_THROW("Input second evaluation key is nullptr");
-        return GetScheme()->MultiAddEvalKeys(evalKey1, evalKey2, keyTag);
+        return REGISTER_IF_TRACE(GetScheme()->MultiAddEvalKeys(evalKey1, evalKey2, keyTag));
     }
 
     /**
@@ -3433,11 +3465,15 @@ public:
     std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> MultiAddEvalSumKeys(
         const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap1,
         const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap2, const std::string& keyTag = "") {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultiAddEvalSumKeys"));
+        IF_TRACE(t->registerInput(evalKeyMap1, "evalKeyMap1"));
+        IF_TRACE(t->registerInput(evalKeyMap2, "evalKeyMap2"));
+        IF_TRACE(t->registerInput(keyTag, "keyTag"));
         if (!evalKeyMap1)
             OPENFHE_THROW("Input first evaluation key map is nullptr");
         if (!evalKeyMap2)
             OPENFHE_THROW("Input second evaluation key map is nullptr");
-        return GetScheme()->MultiAddEvalSumKeys(evalKeyMap1, evalKeyMap2, keyTag);
+        return REGISTER_IF_TRACE(GetScheme()->MultiAddEvalSumKeys(evalKeyMap1, evalKeyMap2, keyTag));
     }
 
     /**
@@ -3451,11 +3487,15 @@ public:
     std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> MultiAddEvalAutomorphismKeys(
         const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap1,
         const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap2, const std::string& keyTag = "") {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultiAddEvalAutomorphismKeys"));
+        IF_TRACE(t->registerInput(evalKeyMap1, "evalKeyMap1"));
+        IF_TRACE(t->registerInput(evalKeyMap2, "evalKeyMap2"));
+        IF_TRACE(t->registerInput(keyTag, "keyTag"));
         if (!evalKeyMap1)
             OPENFHE_THROW("Input first evaluation key map is nullptr");
         if (!evalKeyMap2)
             OPENFHE_THROW("Input second evaluation key map is nullptr");
-        return GetScheme()->MultiAddEvalAutomorphismKeys(evalKeyMap1, evalKeyMap2, keyTag);
+        return REGISTER_IF_TRACE(GetScheme()->MultiAddEvalAutomorphismKeys(evalKeyMap1, evalKeyMap2, keyTag));
     }
 
     /**
@@ -3468,11 +3508,15 @@ public:
     */
     PublicKey<Element> MultiAddPubKeys(PublicKey<Element> publicKey1, PublicKey<Element> publicKey2,
                                        const std::string& keyTag = "") {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultiAddPubKeys"));
+        IF_TRACE(t->registerInput(publicKey1, "publicKey1"));
+        IF_TRACE(t->registerInput(publicKey2, "publicKey2"));
+        IF_TRACE(t->registerInput(keyTag, "keyTag"));
         if (!publicKey1)
             OPENFHE_THROW("Input first public key is nullptr");
         if (!publicKey2)
             OPENFHE_THROW("Input second public key is nullptr");
-        return GetScheme()->MultiAddPubKeys(publicKey1, publicKey2, keyTag);
+        return REGISTER_IF_TRACE(GetScheme()->MultiAddPubKeys(publicKey1, publicKey2, keyTag));
     }
 
     /**
@@ -3485,11 +3529,15 @@ public:
     */
     EvalKey<Element> MultiAddEvalMultKeys(EvalKey<Element> evalKey1, EvalKey<Element> evalKey2,
                                           const std::string& keyTag = "") {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MultiAddEvalMultKeys"));
+        IF_TRACE(t->registerInput(evalKey1, "evalKey1"));
+        IF_TRACE(t->registerInput(evalKey2, "evalKey2"));
+        IF_TRACE(t->registerInput(keyTag, "keyTag"));
         if (!evalKey1)
             OPENFHE_THROW("Input first evaluation key is nullptr");
         if (!evalKey2)
             OPENFHE_THROW("Input second evaluation key is nullptr");
-        return GetScheme()->MultiAddEvalMultKeys(evalKey1, evalKey2, keyTag);
+        return REGISTER_IF_TRACE(GetScheme()->MultiAddEvalMultKeys(evalKey1, evalKey2, keyTag));
     }
 
     /**
@@ -3667,6 +3715,9 @@ public:
     * @param slots       Number of slots to support permutations on.
     */
     void EvalBootstrapKeyGen(const PrivateKey<Element> privateKey, uint32_t slots) {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalBootstrapKeyGen"));
+        IF_TRACE(t->registerInput(privateKey, "privateKey"));
+        IF_TRACE(t->registerInput(slots, "slots"));
         ValidateKey(privateKey);
         auto evalKeys = GetScheme()->EvalBootstrapKeyGen(privateKey, slots);
         CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
@@ -3678,6 +3729,8 @@ public:
     * @param slots  Number of slots to be bootstrapped.
     */
     void EvalBootstrapPrecompute(uint32_t slots = 0) {
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalBootstrapPrecompute"));
+        IF_TRACE(t->registerInput(slots, "slots"));
         GetScheme()->EvalBootstrapPrecompute(*this, slots);
     }
 
@@ -3691,7 +3744,10 @@ public:
     */
     Ciphertext<Element> EvalBootstrap(ConstCiphertext<Element>& ciphertext, uint32_t numIterations = 1,
                                       uint32_t precision = 0) const {
-        return GetScheme()->EvalBootstrap(ciphertext, numIterations, precision);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalBootstrap", {ciphertext}));
+        IF_TRACE(t->registerInput(numIterations, "numIterations"));
+        IF_TRACE(t->registerInput(precision, "precision"));
+        return REGISTER_IF_TRACE(GetScheme()->EvalBootstrap(ciphertext, numIterations, precision));
     }
 
     //------------------------------------------------------------------------------

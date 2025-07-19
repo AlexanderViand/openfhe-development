@@ -235,6 +235,17 @@ public:
     void registerInput(bool value, std::string name = "", bool isMutable = false) override {
         m_inputs.push_back(name + " " + (value ? "true" : "false") + " : bool");
     }
+    void registerInput(const std::string& value, std::string name = "", bool isMutable = false) override {
+        m_inputs.push_back(name + " \"" + value + "\" : string");
+    }
+    void registerInput(const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>>& evalKeyMap, 
+                       std::string name = "", bool isMutable = false) override {
+        if (evalKeyMap) {
+            m_inputs.push_back(name + " [" + std::to_string(evalKeyMap->size()) + " keys] : map<uint32_t,EvalKey>");
+        } else {
+            m_inputs.push_back(name + " nullptr : map<uint32_t,EvalKey>");
+        }
+    }
     void registerInput(void* ptr, std::string name = "", bool isMutable = false) override {
         std::stringstream ss;
         ss << std::hex << ptr;
@@ -393,6 +404,18 @@ public:
     std::vector<int64_t> registerOutput(const std::vector<int64_t>& values, std::string name = "") {
         m_outputs.push_back(name + " " + formatVector(values, "vector<int64_t>"));
         return values;
+    }
+    PublicKey<Element> registerOutput(PublicKey<Element> publicKey, std::string name = "") override {
+        registerObjectHelper(publicKey, "public_key", name, m_outputs);
+        return publicKey;
+    }
+    PrivateKey<Element> registerOutput(PrivateKey<Element> privateKey, std::string name = "") override {
+        registerObjectHelper(privateKey, "private_key", name, m_outputs);
+        return privateKey;
+    }
+    std::string registerOutput(const std::string& value, std::string name = "") override {
+        m_outputs.push_back(name + " \"" + value + "\" : string");
+        return value;
     }
 
 private:
