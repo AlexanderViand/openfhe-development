@@ -1501,7 +1501,7 @@ public:
     Ciphertext<Element> EvalAddMutable(Ciphertext<Element>& ciphertext1, Ciphertext<Element>& ciphertext2) const {
         TypeCheck(ciphertext1, ciphertext2);
         IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalAddMutable", {ciphertext1, ciphertext2}));
-        return REGISTER_IF_TRACE(t, GetScheme()->EvalAddMutable(ciphertext1, ciphertext2));
+        return REGISTER_IF_TRACE(GetScheme()->EvalAddMutable(ciphertext1, ciphertext2));
     }
 
     /**
@@ -1529,7 +1529,7 @@ public:
         plaintext->SetFormat(EVALUATION);
         IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalAdd", {ciphertext}));
         IF_TRACE(t->registerInput(plaintext));
-        return REGISTER_IF_TRACE(t, GetScheme()->EvalAdd(ciphertext, plaintext));
+        return REGISTER_IF_TRACE(GetScheme()->EvalAdd(ciphertext, plaintext));
     }
 
     /**
@@ -1580,7 +1580,7 @@ public:
         plaintext->SetFormat(EVALUATION);
         IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalAddMutable", {ciphertext}));
         IF_TRACE(t->registerInput(plaintext));
-        return REGISTER_IF_TRACE(t, GetScheme()->EvalAddMutable(ciphertext, plaintext));
+        return REGISTER_IF_TRACE(GetScheme()->EvalAddMutable(ciphertext, plaintext));
     }
 
     /**
@@ -1689,7 +1689,7 @@ public:
         IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalAdd", {ciphertext}));
         IF_TRACE(t->registerInput(static_cast<double>(scalar.real()), "real"));
         IF_TRACE(t->registerInput(static_cast<double>(scalar.imag()), "imag"));
-        return REGISTER_IF_TRACE(t, GetScheme()->EvalAdd(ciphertext, scalar));
+        return REGISTER_IF_TRACE(GetScheme()->EvalAdd(ciphertext, scalar));
     }
 
     /**
@@ -1853,7 +1853,7 @@ public:
         IF_TRACE(t->registerInput(constant));
         Ciphertext<Element> result =
             constant >= 0 ? GetScheme()->EvalSub(ciphertext, constant) : GetScheme()->EvalAdd(ciphertext, -constant);
-        return REGISTER_IF_TRACE(t, result);
+        return REGISTER_IF_TRACE(result);
     }
 
     /**
@@ -2383,7 +2383,7 @@ public:
         auto evalKeys = GetScheme()->EvalAutomorphismKeyGen(privateKey, newIndices);
         CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
 
-        return REGISTER_IF_TRACE(t, evalKeys);
+        return REGISTER_IF_TRACE(evalKeys);
     }
 
     [[deprecated(
@@ -2764,9 +2764,9 @@ public:
         IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalAddMany"));
         IF_TRACE(for (const auto& ct : ciphertextVec) t->registerInput(ct));
         if (ciphertextVec.size() == 1)
-            return REGISTER_IF_TRACE(t, ciphertextVec[0]);
+            return REGISTER_IF_TRACE(ciphertextVec[0]);
 
-        return REGISTER_IF_TRACE(t, GetScheme()->EvalAddMany(ciphertextVec));
+        return REGISTER_IF_TRACE(GetScheme()->EvalAddMany(ciphertextVec));
     }
 
     /**
@@ -2928,7 +2928,7 @@ public:
         IF_TRACE(t->registerInput(a, "a"));
         IF_TRACE(t->registerInput(b, "b"));
         ValidateCiphertext(ciphertext);
-        return REGISTER_IF_TRACE(t, GetScheme()->EvalChebyshevSeries(ciphertext, coefficients, a, b));
+        return REGISTER_IF_TRACE(GetScheme()->EvalChebyshevSeries(ciphertext, coefficients, a, b));
     }
 
     /**
@@ -2948,7 +2948,7 @@ public:
         IF_TRACE(t->registerInput(a, "a"));
         IF_TRACE(t->registerInput(b, "b"));
         ValidateCiphertext(ciphertext);
-        return REGISTER_IF_TRACE(t, GetScheme()->EvalChebyshevSeriesLinear(ciphertext, coefficients, a, b));
+        return REGISTER_IF_TRACE(GetScheme()->EvalChebyshevSeriesLinear(ciphertext, coefficients, a, b));
     }
 
     /**
@@ -2968,7 +2968,7 @@ public:
         IF_TRACE(t->registerInput(a, "a"));
         IF_TRACE(t->registerInput(b, "b"));
         ValidateCiphertext(ciphertext);
-        return REGISTER_IF_TRACE(t, GetScheme()->EvalChebyshevSeriesPS(ciphertext, coefficients, a, b));
+        return REGISTER_IF_TRACE(GetScheme()->EvalChebyshevSeriesPS(ciphertext, coefficients, a, b));
     }
 
     /**
@@ -3180,7 +3180,7 @@ public:
         ValidateKey(oldPrivateKey);
         ValidateKey(newPublicKey);
 
-        return REGISTER_IF_TRACE(t, GetScheme()->ReKeyGen(oldPrivateKey, newPublicKey));
+        return REGISTER_IF_TRACE(GetScheme()->ReKeyGen(oldPrivateKey, newPublicKey));
     }
 
     /**
@@ -3228,7 +3228,7 @@ public:
         IF_TRACE(for (const auto& key : privateKeyVec) t->registerInput(key));
         if (!privateKeyVec.size())
             OPENFHE_THROW("Input private key vector is empty");
-        return REGISTER_IF_TRACE(t, GetScheme()->MultipartyKeyGen(GetContextForPointer(this), privateKeyVec, false));
+        return REGISTER_IF_TRACE(GetScheme()->MultipartyKeyGen(GetContextForPointer(this), privateKeyVec, false));
     }
 
     /**
@@ -3246,7 +3246,8 @@ public:
         IF_TRACE(t->registerInput(fresh, "fresh"));
         if (!publicKey)
             OPENFHE_THROW("Input public key is empty");
-        return REGISTER_IF_TRACE(t, GetScheme()->MultipartyKeyGen(GetContextForPointer(this), publicKey, makeSparse, fresh));
+        return REGISTER_IF_TRACE(
+            GetScheme()->MultipartyKeyGen(GetContextForPointer(this), publicKey, makeSparse, fresh));
     }
 
     /**

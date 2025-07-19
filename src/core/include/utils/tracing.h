@@ -96,8 +96,9 @@ struct FunctionTracer {
     virtual void registerInput(const PlaintextEncodings encoding, std::string name = "", bool isisMutable = false)  = 0;
     virtual void registerInput(const std::vector<int64_t>& values, std::string name = "", bool isisMutable = false) = 0;
     virtual void registerInput(const std::vector<int32_t>& values, std::string name = "", bool isisMutable = false) = 0;
-    virtual void registerInput(const std::vector<uint32_t>& values, std::string name = "", bool isisMutable = false) = 0;
-    virtual void registerInput(const std::vector<double>& values, std::string name = "", bool isisMutable = false) = 0;
+    virtual void registerInput(const std::vector<uint32_t>& values, std::string name = "",
+                               bool isisMutable = false)                                                            = 0;
+    virtual void registerInput(const std::vector<double>& values, std::string name = "", bool isisMutable = false)  = 0;
     virtual void registerInput(double value, std::string name = "", bool isisMutable = false)                       = 0;
     virtual void registerInput(std::complex<double> value, std::string name = "", bool isisMutable = false)         = 0;
     virtual void registerInput(const std::vector<std::complex<double>>& values, std::string name = "",
@@ -110,7 +111,7 @@ struct FunctionTracer {
     }
     virtual void registerInput(int64_t value, std::string name = "", bool isisMutable = false) = 0;
     virtual void registerInput(size_t value, std::string name = "", bool isisMutable = false)  = 0;
-    virtual void registerInput(bool value, std::string name = "", bool isisMutable = false) = 0;
+    virtual void registerInput(bool value, std::string name = "", bool isisMutable = false)    = 0;
 
     /// If there are unknown types that should be traced, they should be registered here.
     virtual void registerInput(void* ptr, std::string name = "", bool isisMutable = false) = 0;
@@ -125,7 +126,7 @@ struct FunctionTracer {
     virtual std::vector<EvalKey<Element>> registerOutput(std::vector<EvalKey<Element>> evalKeys,
                                                          std::string name = "")                                 = 0;
     virtual std::vector<Ciphertext<Element>> registerOutput(std::vector<Ciphertext<Element>> ciphertexts,
-                                                            std::string name = "")                               = 0;
+                                                            std::string name = "")                              = 0;
     virtual std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> registerOutput(
         std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap, std::string name = "") = 0;
 };
@@ -220,7 +221,8 @@ public:
     virtual std::vector<EvalKey<Element>> registerOutput(std::vector<EvalKey<Element>> evalKeys, std::string) override {
         return evalKeys;
     }
-    virtual std::vector<Ciphertext<Element>> registerOutput(std::vector<Ciphertext<Element>> ciphertexts, std::string) override {
+    virtual std::vector<Ciphertext<Element>> registerOutput(std::vector<Ciphertext<Element>> ciphertexts,
+                                                            std::string) override {
         return ciphertexts;
     }
     virtual std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> registerOutput(
