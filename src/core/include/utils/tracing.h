@@ -109,12 +109,12 @@ struct FunctionTracer {
     virtual void registerInput(uint32_t value, std::string name = "", bool isisMutable = false) {
         registerInput(static_cast<int64_t>(value), name, isisMutable);
     }
-    virtual void registerInput(int64_t value, std::string name = "", bool isisMutable = false) = 0;
-    virtual void registerInput(size_t value, std::string name = "", bool isisMutable = false)  = 0;
-    virtual void registerInput(bool value, std::string name = "", bool isisMutable = false)    = 0;
+    virtual void registerInput(int64_t value, std::string name = "", bool isisMutable = false)            = 0;
+    virtual void registerInput(size_t value, std::string name = "", bool isisMutable = false)             = 0;
+    virtual void registerInput(bool value, std::string name = "", bool isisMutable = false)               = 0;
     virtual void registerInput(const std::string& value, std::string name = "", bool isisMutable = false) = 0;
-    virtual void registerInput(const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>>& evalKeyMap, 
-                               std::string name = "", bool isisMutable = false) = 0;
+    virtual void registerInput(const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>>& evalKeyMap,
+                               std::string name = "", bool isisMutable = false)                           = 0;
 
     /// If there are unknown types that should be traced, they should be registered here.
     virtual void registerInput(void* ptr, std::string name = "", bool isisMutable = false) = 0;
@@ -131,10 +131,10 @@ struct FunctionTracer {
     virtual std::vector<Ciphertext<Element>> registerOutput(std::vector<Ciphertext<Element>> ciphertexts,
                                                             std::string name = "")                              = 0;
     virtual std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> registerOutput(
-        std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap, std::string name = "") = 0;
-    virtual PublicKey<Element> registerOutput(PublicKey<Element> publicKey, std::string name = "") = 0;
+        std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap, std::string name = "")      = 0;
+    virtual PublicKey<Element> registerOutput(PublicKey<Element> publicKey, std::string name = "")    = 0;
     virtual PrivateKey<Element> registerOutput(PrivateKey<Element> privateKey, std::string name = "") = 0;
-    virtual std::string registerOutput(const std::string& value, std::string name = "") = 0;
+    virtual std::string registerOutput(const std::string& value, std::string name = "")               = 0;
 };
 
 template <typename Element>
@@ -208,8 +208,8 @@ public:
     virtual void registerInput(size_t, std::string, bool isMutable = false) override {}
     virtual void registerInput(bool, std::string, bool isMutable = false) override {}
     virtual void registerInput(const std::string&, std::string, bool isMutable = false) override {}
-    virtual void registerInput(const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>>&, 
-                               std::string, bool isMutable = false) override {}
+    virtual void registerInput(const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>>&, std::string,
+                               bool isMutable = false) override {}
     virtual void registerInput(void*, std::string, bool isMutable = false) override {}
 
     virtual Ciphertext<Element> registerOutput(Ciphertext<Element> ciphertext, std::string) override {

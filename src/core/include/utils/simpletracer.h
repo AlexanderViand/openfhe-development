@@ -238,11 +238,12 @@ public:
     void registerInput(const std::string& value, std::string name = "", bool isMutable = false) override {
         m_inputs.push_back(name + " \"" + value + "\" : string");
     }
-    void registerInput(const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>>& evalKeyMap, 
-                       std::string name = "", bool isMutable = false) override {
+    void registerInput(const std::shared_ptr<std::map<uint32_t, EvalKey<Element>>>& evalKeyMap, std::string name = "",
+                       bool isMutable = false) override {
         if (evalKeyMap) {
             m_inputs.push_back(name + " [" + std::to_string(evalKeyMap->size()) + " keys] : map<uint32_t,EvalKey>");
-        } else {
+        }
+        else {
             m_inputs.push_back(name + " nullptr : map<uint32_t,EvalKey>");
         }
     }
