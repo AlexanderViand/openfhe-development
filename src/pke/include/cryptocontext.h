@@ -2517,7 +2517,10 @@ public:
     */
     Ciphertext<Element> EvalFastRotation(ConstCiphertext<Element>& ciphertext, const uint32_t index, const uint32_t m,
                                          const std::shared_ptr<std::vector<Element>> digits) const {
-        return GetScheme()->EvalFastRotation(ciphertext, index, m, digits);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalFastRotation", {ciphertext}));
+        IF_TRACE(t->registerInput(static_cast<size_t>(index), "index"));
+        IF_TRACE(t->registerInput(static_cast<size_t>(m), "m"));
+        return REGISTER_IF_TRACE(GetScheme()->EvalFastRotation(ciphertext, index, m, digits));
     }
 
     /**
@@ -3186,7 +3189,8 @@ public:
                                   const PublicKey<Element> publicKey = nullptr) const {
         ValidateCiphertext(ciphertext);
         ValidateKey(evalKey);
-        return GetScheme()->ReEncrypt(ciphertext, evalKey, publicKey);
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("ReEncrypt", {ciphertext}));
+        return REGISTER_IF_TRACE(GetScheme()->ReEncrypt(ciphertext, evalKey, publicKey));
     }
 
     //------------------------------------------------------------------------------

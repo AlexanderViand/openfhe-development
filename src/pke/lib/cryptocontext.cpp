@@ -74,7 +74,8 @@ void CryptoContextImpl<Element>::EvalMultKeyGen(const PrivateKey<Element> key) {
     if (CryptoContextImpl<Element>::s_evalMultKeyMap.find(key->GetKeyTag()) ==
         CryptoContextImpl<Element>::s_evalMultKeyMap.end()) {
         // the key is not found in the map, so the key has to be generated
-        CryptoContextImpl<Element>::s_evalMultKeyMap[key->GetKeyTag()] = {REGISTER_IF_TRACE(GetScheme()->EvalMultKeyGen(key))};
+        CryptoContextImpl<Element>::s_evalMultKeyMap[key->GetKeyTag()] = {
+            REGISTER_IF_TRACE(GetScheme()->EvalMultKeyGen(key))};
     }
 }
 
@@ -86,7 +87,8 @@ void CryptoContextImpl<Element>::EvalMultKeysGen(const PrivateKey<Element> key) 
     if (CryptoContextImpl<Element>::s_evalMultKeyMap.find(key->GetKeyTag()) ==
         CryptoContextImpl<Element>::s_evalMultKeyMap.end()) {
         // the key is not found in the map, so the key has to be generated
-        CryptoContextImpl<Element>::s_evalMultKeyMap[key->GetKeyTag()] = REGISTER_IF_TRACE(GetScheme()->EvalMultKeysGen(key));
+        CryptoContextImpl<Element>::s_evalMultKeyMap[key->GetKeyTag()] =
+            REGISTER_IF_TRACE(GetScheme()->EvalMultKeysGen(key));
     }
 }
 

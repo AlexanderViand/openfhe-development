@@ -20,8 +20,8 @@
 #ifdef ENABLE_TRACER_SUPPORT
     /// The 1-argument version is a special case for CrytpoContext.h where
     /// where there is a convention that the FunctionTracer is always called t
-    #define REGISTER_IF_TRACE_1(x)    t->registerOutput(x);
-    #define REGISTER_IF_TRACE_2(t, x) t->registerOutput(x);
+    #define REGISTER_IF_TRACE_1(x)    t->registerOutput(x)
+    #define REGISTER_IF_TRACE_2(t, x) t->registerOutput(x)
 #else
     #define REGISTER_IF_TRACE_1(x)    x
     #define REGISTER_IF_TRACE_2(t, x) x
@@ -37,8 +37,13 @@
     #include "encoding/plaintext-fwd.h"
     #include "key/publickey-fwd.h"
     #include "key/privatekey-fwd.h"
+    #include "key/evalkey-fwd.h"
 
 namespace lbcrypto {
+
+// There is no keypair-fwd.d so add a fwd decl here
+template <typename Element>
+class KeyPair;
 
 /// Tracking for data movements
 template <typename Element>
@@ -87,13 +92,18 @@ struct FunctionTracer {
     virtual void registerInput(const PublicKey<Element> publicKey, std::string name = "", bool isisMutable = false) = 0;
     virtual void registerInput(const PrivateKey<Element> privateKey, std::string name = "",
                                bool isisMutable = false)                                                            = 0;
+    virtual void registerInput(const EvalKey<Element> evalKey, std::string name = "", bool isisMutable = false)     = 0;
     virtual void registerInput(const PlaintextEncodings encoding, std::string name = "", bool isisMutable = false)  = 0;
     virtual void registerInput(const std::vector<int64_t>& values, std::string name = "", bool isisMutable = false) = 0;
+    virtual void registerInput(const std::vector<int32_t>& values, std::string name = "", bool isisMutable = false) = 0;
     virtual void registerInput(double value, std::string name = "", bool isisMutable = false)                       = 0;
     virtual void registerInput(std::complex<double> value, std::string name = "", bool isisMutable = false)         = 0;
     virtual void registerInput(const std::vector<std::complex<double>>& values, std::string name = "",
                                bool isisMutable = false)                                                            = 0;
     virtual void registerInput(int32_t value, std::string name = "", bool isisMutable = false) {
+        registerInput(static_cast<int64_t>(value), name, isisMutable);
+    }
+    virtual void registerInput(uint32_t value, std::string name = "", bool isisMutable = false) {
         registerInput(static_cast<int64_t>(value), name, isisMutable);
     }
     virtual void registerInput(int64_t value, std::string name = "", bool isisMutable = false) = 0;
@@ -107,6 +117,12 @@ struct FunctionTracer {
     virtual Ciphertext<Element> registerOutput(Ciphertext<Element> ciphertext, std::string name = "")           = 0;
     virtual ConstCiphertext<Element> registerOutput(ConstCiphertext<Element> ciphertext, std::string name = "") = 0;
     virtual Plaintext registerOutput(Plaintext plaintext, std::string name = "")                                = 0;
+    virtual KeyPair<Element> registerOutput(KeyPair<Element> keyPair, std::string name = "")                    = 0;
+    virtual EvalKey<Element> registerOutput(EvalKey<Element> evalKey, std::string name = "")                    = 0;
+    virtual std::vector<EvalKey<Element>> registerOutput(std::vector<EvalKey<Element>> evalKeys,
+                                                         std::string name = "")                                 = 0;
+    virtual std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> registerOutput(
+        std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap, std::string name = "") = 0;
 };
 
 template <typename Element>
@@ -122,7 +138,7 @@ public:
     virtual std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(
         std::string function_name, std::initializer_list<ConstCiphertext<Element>> ciphertext_inputs) = 0;
 
-    virtual std::unique_ptr<DataTracer<Element>> TraceDataUpdate(std::string function_Name);
+    virtual std::unique_ptr<DataTracer<Element>> TraceDataUpdate(std::string function_Name) = 0;
 };
 
 /// A null data tracer that does nothing when called
@@ -166,8 +182,10 @@ public:
                                 bool isMutable = false) override {}
     virtual void registerInput(const PublicKey<Element>, std::string, bool isMutable = false) override {}
     virtual void registerInput(const PrivateKey<Element>, std::string, bool isMutable = false) override {}
+    virtual void registerInput(const EvalKey<Element>, std::string, bool isMutable = false) override {}
     virtual void registerInput(const PlaintextEncodings, std::string, bool isMutable = false) override {}
     virtual void registerInput(const std::vector<int64_t>&, std::string, bool isMutable = false) override {}
+    virtual void registerInput(const std::vector<int32_t>&, std::string, bool isMutable = false) override {}
     virtual void registerInput(double, std::string, bool isMutable = false) override {}
     virtual void registerInput(std::complex<double> value, std::string name = "", bool isMutable = false) override {}
     virtual void registerInput(const std::vector<std::complex<double>>&, std::string, bool isMutable = false) override {
@@ -184,6 +202,19 @@ public:
     }
     virtual Plaintext registerOutput(Plaintext plaintext, std::string) override {
         return plaintext;
+    }
+    virtual KeyPair<Element> registerOutput(KeyPair<Element> keyPair, std::string) override {
+        return keyPair;
+    }
+    virtual EvalKey<Element> registerOutput(EvalKey<Element> evalKey, std::string) override {
+        return evalKey;
+    }
+    virtual std::vector<EvalKey<Element>> registerOutput(std::vector<EvalKey<Element>> evalKeys, std::string) override {
+        return evalKeys;
+    }
+    virtual std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> registerOutput(
+        std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap, std::string) override {
+        return evalKeyMap;
     }
 };
 

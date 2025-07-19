@@ -20,6 +20,7 @@
     #include "cryptocontext-ser.h"
     #include "ciphertext-ser.h"
     #include "plaintext-ser.h"
+    #include "key/key-ser.h"
     #include "scheme/ckksrns/ckksrns-ser.h"
     #include "scheme/bfvrns/bfvrns-ser.h"
     #include "scheme/bgvrns/bgvrns-ser.h"
@@ -169,6 +170,9 @@ public:
     void registerInput(const PrivateKey<Element> key, std::string name = "", bool isMutable = false) override {
         registerObjectHelper(key, "private_key", name, m_inputs);
     }
+    void registerInput(const EvalKey<Element> key, std::string name = "", bool isMutable = false) override {
+        registerObjectHelper(key, "eval_key", name, m_inputs);
+    }
     void registerInput(const PlaintextEncodings encoding, std::string name = "", bool isMutable = false) override {
         std::string encodingStr;
         switch (encoding) {
@@ -192,6 +196,10 @@ public:
     }
     void registerInput(const std::vector<int64_t>& values, std::string name = "", bool isMutable = false) override {
         m_inputs.push_back(name + " " + formatVector(values, "vector<int64_t>"));
+    }
+    void registerInput(const std::vector<int32_t>& values, std::string name = "", bool isMutable = false) override {
+        std::vector<int64_t> converted(values.begin(), values.end());
+        m_inputs.push_back(name + " " + formatVector(converted, "vector<int32_t>"));
     }
     void registerInput(double value, std::string name = "", bool isMutable = false) override {
         m_inputs.push_back(name + " " + std::to_string(value) + " : double");
@@ -231,6 +239,86 @@ public:
     Plaintext registerOutput(Plaintext plaintext, std::string name = "") override {
         registerObjectHelper(plaintext, "plaintext", name, m_outputs);
         return plaintext;
+    }
+    KeyPair<Element> registerOutput(KeyPair<Element> keyPair, std::string name = "") override {
+        // Register the public and private keys separately
+        if (keyPair.publicKey != nullptr) {
+            registerObjectHelper(keyPair.publicKey, "public_key", name + "_public", m_outputs);
+        }
+        if (keyPair.secretKey != nullptr) {
+            registerObjectHelper(keyPair.secretKey, "private_key", name + "_private", m_outputs);
+        }
+        return keyPair;
+    }
+    EvalKey<Element> registerOutput(EvalKey<Element> evalKey, std::string name = "") override {
+        registerObjectHelper(evalKey, "eval_key", name, m_outputs);
+        return evalKey;
+    }
+    std::vector<EvalKey<Element>> registerOutput(std::vector<EvalKey<Element>> evalKeys,
+                                                 std::string name = "") override {
+        std::stringstream ss;
+        ss << name << " [";
+        for (size_t i = 0; i < evalKeys.size(); ++i) {
+            if (i > 0)
+                ss << ", ";
+            // Hash each eval key individually
+            std::stringstream serialStream;
+            Serial::Serialize(evalKeys[i], serialStream, SerType::BINARY);
+            const std::string hash = HashUtil::HashString(serialStream.str());
+
+            auto hashIt = m_tracer->m_uniqueID.find(hash);
+            if (hashIt != m_tracer->m_uniqueID.end()) {
+                ss << hashIt->second;
+            }
+            else {
+                std::string id             = generateObjectId("eval_key");
+                m_tracer->m_uniqueID[hash] = id;
+                ss << id;
+            }
+            if (i >= 10) {
+                ss << ", ...(" << (evalKeys.size() - i - 1) << " more)";
+                break;
+            }
+        }
+        ss << "] : vector<EvalKey>";
+        m_outputs.push_back(ss.str());
+        return evalKeys;
+    }
+    std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> registerOutput(
+        std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> evalKeyMap, std::string name = "") override {
+        std::stringstream ss;
+        ss << name << " {";
+        if (evalKeyMap && evalKeyMap->size() > 0) {
+            size_t count = 0;
+            for (const auto& pair : *evalKeyMap) {
+                if (count > 0)
+                    ss << ", ";
+                ss << pair.first << ": ";
+
+                // Hash the eval key
+                std::stringstream serialStream;
+                Serial::Serialize(pair.second, serialStream, SerType::BINARY);
+                const std::string hash = HashUtil::HashString(serialStream.str());
+
+                auto hashIt = m_tracer->m_uniqueID.find(hash);
+                if (hashIt != m_tracer->m_uniqueID.end()) {
+                    ss << hashIt->second;
+                }
+                else {
+                    std::string id             = generateObjectId("eval_key");
+                    m_tracer->m_uniqueID[hash] = id;
+                    ss << id;
+                }
+
+                if (++count >= 10) {
+                    ss << ", ...(" << (evalKeyMap->size() - count) << " more)";
+                    break;
+                }
+            }
+        }
+        ss << "} : map<uint32_t, EvalKey>";
+        m_outputs.push_back(ss.str());
+        return evalKeyMap;
     }
 
     // Output registration for basic types
