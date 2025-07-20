@@ -479,13 +479,12 @@ public:
         heracles::fhe_trace::store_trace(actualFilename, trace);
     }
 
-    /// Save trace to file in JSON format (if supported by HERACLES)
+    /// Save trace to file in JSON format
     void saveTraceJson(const std::string& filename = "") {
-        // Note: JSON export may not be available in all HERACLES versions
-        // For now, just save as binary format
         std::string actualFilename = filename.empty() ? (m_filename + ".json") : filename;
-        std::cout << "JSON export not available, saving as binary to: " << actualFilename << std::endl;
-        saveTrace(actualFilename);
+
+        auto trace = getTrace();
+        heracles::fhe_trace::store_json_trace(actualFilename, trace);
     }  /// Add an instruction to the trace
     void addInstruction(const heracles::fhe_trace::Instruction& instruction) {
         std::lock_guard<std::mutex> lock(m_mutex);
