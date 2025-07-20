@@ -607,7 +607,7 @@ if(ENABLE_TRACER_SUPPORT)
     FetchContent_Declare(
         HERACLES_DATA_FORMATS
         GIT_REPOSITORY https://github.com/IntelLabs/encrypted-computing-sdk.git
-        GIT_TAG 7b3aa0c1f7e98955ec80dfb75bd3559b46aae8c2 # HEAD of aviand/data-formats branch as of 2025-07-16
+        GIT_TAG 4f7de5e955bb58c89875c798b4d8bc5abb96fffc # HEAD of aviand/data-formats branch as of 2025-07-19
         SOURCE_SUBDIR tracing/data-formats
     )
     FetchContent_MakeAvailable(HERACLES_DATA_FORMATS)
@@ -615,6 +615,8 @@ if(ENABLE_TRACER_SUPPORT)
     # Not the most elegant solution, but good enough until this gets refactored into an external thing
     get_target_property(HERACLES_INCLUDE_DIRS HERACLES_DATA_FORMATS::heracles_data_formats INTERFACE_INCLUDE_DIRECTORIES)
     include_directories(${HERACLES_INCLUDE_DIRS})
+    # Add the HERACLES library to THIRDPARTYLIBS so it gets linked to examples
+    list(APPEND THIRDPARTYLIBS HERACLES_DATA_FORMATS::heracles_data_formats)
 endif()
 
 if(WITH_NTL)
