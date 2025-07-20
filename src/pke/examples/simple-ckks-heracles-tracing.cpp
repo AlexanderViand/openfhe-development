@@ -97,10 +97,12 @@ int main() {
     // Step 6: Save HERACLES trace
     IF_TRACE(auto heraclesTracer = std::dynamic_pointer_cast<HeraclesTracer<DCRTPoly>>(cc->getTracer()));
     IF_TRACE(if (heraclesTracer) {
-        heraclesTracer->saveTrace();      // Save binary format
+        std::cout << "Saving Trace" << std::endl;
+        heraclesTracer->saveTrace();  // Save binary format
+        std::cout << "Saving JSON Trace" << std::endl;
         heraclesTracer->saveTraceJson();  // Save JSON format for inspection
         std::cout
-            << "\nHERACLES trace saved to 'simple-ckks-heracles-trace' (binary) and 'simple-ckks-heracles-trace.json' (JSON)"
+            << "\nHERACLES trace saved to 'simple-ckks-heracles-trace.bin' (binary) and 'simple-ckks-heracles-trace.json' (JSON)"
             << std::endl;
     });
 

@@ -13,6 +13,11 @@
     #include <utility>
     #include <vector>
     #include <cassert>
+    #include <mutex>
+    #include <unordered_set>
+    #ifdef WITH_OPENMP
+        #include <omp.h>
+    #endif
     #include <type_traits>
     #include <complex>
     #include <iomanip>
@@ -30,6 +35,7 @@
 
     #include <heracles/heracles_proto.h>
     #include <heracles/heracles_data_formats.h>
+    #include <heracles/data/io.h>
 
 namespace lbcrypto {
 
@@ -59,7 +65,21 @@ private:
         std::string id             = type + "_" + std::to_string(++counter);
         m_tracer->m_uniqueID[hash] = id;
         return id;
-    }  /// Helper to create HERACLES OperandObject for ciphertexts/plaintexts
+    }
+
+    /// Helper to store DCRTPoly data for test vector generation
+    void storeDataIfNeeded(ConstCiphertext<Element> ciphertext, const std::string& objectId) {
+        if (ciphertext && ciphertext->GetElements().size() > 0) {
+            m_tracer->storeData(objectId, ciphertext->GetElements());
+        }
+    }
+
+    void storeDataIfNeeded(ConstPlaintext plaintext, const std::string& objectId) {
+        // Plaintexts don't have DCRTPoly elements in the same way, so we skip data storage for now
+        // In a full implementation, we might need to handle this differently
+    }
+
+    /// Helper to create HERACLES OperandObject for ciphertexts/plaintexts
     void setHERACLESOperandObject(heracles::fhe_trace::OperandObject* opObj, const std::string& objectId,
                                   size_t numRNS = 0, size_t order = 1) {
         opObj->set_symbol_name(objectId);
@@ -77,6 +97,9 @@ private:
             auto* srcOp = m_currentInstruction.mutable_args()->add_srcs();
             setHERACLESOperandObject(srcOp, objectId, numRNS, order);
 
+            // Store data for test vector generation
+            storeDataIfNeeded(ciphertext, objectId);
+
             // Store for later reference
             m_inputObjectIds.push_back(objectId);
         }
@@ -89,6 +112,9 @@ private:
 
             auto* srcOp = m_currentInstruction.mutable_args()->add_srcs();
             setHERACLESOperandObject(srcOp, objectId, 0, 1);
+
+            // Store data for test vector generation
+            storeDataIfNeeded(plaintext, objectId);
 
             m_inputObjectIds.push_back(objectId);
         }
@@ -294,6 +320,10 @@ public:
 
             auto* destOp = m_currentInstruction.mutable_args()->add_dests();
             setHERACLESOperandObject(destOp, objectId, numRNS, order);
+
+            // Store data for test vector generation
+            storeDataIfNeeded(ciphertext, objectId);
+
             m_hasOutput = true;
         }
         return ciphertext;
@@ -307,6 +337,10 @@ public:
 
             auto* destOp = m_currentInstruction.mutable_args()->add_dests();
             setHERACLESOperandObject(destOp, objectId, numRNS, order);
+
+            // Store data for test vector generation
+            storeDataIfNeeded(ciphertext, objectId);
+
             m_hasOutput = true;
         }
         return ciphertext;
@@ -317,6 +351,10 @@ public:
             std::string objectId = getObjectId(plaintext, "plaintext");
             auto* destOp         = m_currentInstruction.mutable_args()->add_dests();
             setHERACLESOperandObject(destOp, objectId, 0, 1);
+
+            // Store data for test vector generation
+            storeDataIfNeeded(plaintext, objectId);
+
             m_hasOutput = true;
         }
         return plaintext;
@@ -428,6 +466,9 @@ public:
     void setContext(const CryptoContext<Element>& cc) {
         std::lock_guard<std::mutex> lock(m_mutex);
 
+        // Store the crypto context for data trace generation
+        m_cryptoContext = cc;
+
         auto scheme = cc->getSchemeId();
         if (scheme == lbcrypto::SCHEME::CKKSRNS_SCHEME) {
             m_trace.set_scheme(heracles::common::SCHEME_CKKS);
@@ -455,27 +496,62 @@ public:
         m_trace.set_q_size(cc->GetElementParams()->GetParams().size());
     }
 
-    /// Get the current trace (for saving or inspection)
-    heracles::fhe_trace::Trace getTrace(bool resetAfterGet = false) {
-        std::lock_guard<std::mutex> lock(m_mutex);
-
-        // Copy instructions to the trace
-        *(m_trace.mutable_instructions()) = {m_instructions.begin(), m_instructions.end()};
-
-        heracles::fhe_trace::Trace result = m_trace;
-
-        if (resetAfterGet) {
-            m_instructions.clear();
+    /// Generate all traces once and cache them (called without mutex lock)
+    void generateTracesIfNeeded() const {
+        if (m_tracesGenerated) {
+            return;  // Already generated
         }
 
-        return result;
+        std::cout << "Generating traces for the first time..." << std::endl;
+
+        // Generate FHE trace
+        m_cachedFHETrace                            = std::make_unique<heracles::fhe_trace::Trace>(m_trace);
+        *(m_cachedFHETrace->mutable_instructions()) = {m_instructions.begin(), m_instructions.end()};
+
+        // Generate context and test vector if we have a crypto context
+        if (m_cryptoContext) {
+            std::cout << "Generating context..." << std::endl;
+            m_cachedContext = std::make_unique<heracles::data::FHEContext>(extractFHEContext(m_cryptoContext));
+
+            std::cout << "Generating test vector..." << std::endl;
+            m_cachedTestVector = std::make_unique<heracles::data::TestVector>(generateTestVector(*m_cachedFHETrace));
+        }
+
+        m_tracesGenerated = true;
+        std::cout << "Traces generated and cached!" << std::endl;
+    }
+
+    /// Get the FHE trace (generates and caches if needed)
+    heracles::fhe_trace::Trace getTrace() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        generateTracesIfNeeded();
+        return *m_cachedFHETrace;
+    }
+
+    /// Get the FHE context (generates and caches if needed)
+    heracles::data::FHEContext getFHEContext() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_cryptoContext) {
+            throw std::runtime_error("CryptoContext not set. Call setContext() first.");
+        }
+        generateTracesIfNeeded();
+        return *m_cachedContext;
+    }
+
+    /// Get the test vector (generates and caches if needed)
+    heracles::data::TestVector getTestVector() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_cryptoContext) {
+            throw std::runtime_error("CryptoContext not set. Call setContext() first.");
+        }
+        generateTracesIfNeeded();
+        return *m_cachedTestVector;
     }
 
     /// Save trace to file in binary format
     void saveTrace(const std::string& filename = "") {
-        std::string actualFilename = filename.empty() ? m_filename : filename;
-
-        auto trace = getTrace();
+        std::string actualFilename = filename.empty() ? (m_filename + ".bin") : filename;
+        auto trace                 = getTrace();
         heracles::fhe_trace::store_trace(actualFilename, trace);
     }
 
@@ -483,29 +559,209 @@ public:
     void saveTraceJson(const std::string& filename = "") {
         std::string actualFilename = filename.empty() ? (m_filename + ".json") : filename;
 
+        // Save FHE trace
+        std::cout << "Saving FHE trace to JSON: " << actualFilename << std::endl;
         auto trace = getTrace();
         heracles::fhe_trace::store_json_trace(actualFilename, trace);
-    }  /// Add an instruction to the trace
+    }
+
+    /// Save data trace to file (context + test vectors)
+    void saveDataTrace(const std::string& filename = "") {
+        if (!m_cryptoContext) {
+            std::cout << "No crypto context available, skipping data trace" << std::endl;
+            return;
+        }
+
+        std::string actualFilename = filename.empty() ? (m_filename + "_data.bin") : filename;
+
+        std::cout << "Saving data trace..." << std::endl;
+        auto context    = getFHEContext();
+        auto testVector = getTestVector();
+
+        // Save as binary data trace
+        heracles::data::store_data_trace(actualFilename, context, testVector);
+
+        // Save context and test vector as JSON for debugging
+        std::string contextJsonFilename    = actualFilename.substr(0, actualFilename.rfind('.')) + "_context.json";
+        std::string testVectorJsonFilename = actualFilename.substr(0, actualFilename.rfind('.')) + "_testvector.json";
+
+        heracles::data::store_hec_context_json(contextJsonFilename, context);
+        heracles::data::store_testvector_json(testVectorJsonFilename, testVector);
+    }
+
+    /// Store DCRTPoly data for test vector generation
+    void storeData(const std::string& objectId, const std::vector<Element>& dcrtpolys) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        // Simply collect objects in the pool during tracing
+        // Conversion to protobuf happens only at the very end in generateTestVector()
+        if (!dcrtpolys.empty()) {
+            m_dataObjectPool[objectId] = dcrtpolys;
+        }
+    }
+
+private:
+    /// Extract FHE context from OpenFHE CryptoContext
+    heracles::data::FHEContext extractFHEContext(const CryptoContext<Element>& cc) const {
+        heracles::data::FHEContext context;
+
+        auto poly_degree = cc->GetRingDimension();
+        auto cc_rns      = std::dynamic_pointer_cast<CryptoParametersRNS>(cc->GetCryptoParameters());
+        auto key_rns     = cc_rns->GetParamsQP()->GetParams();
+
+        context.set_n(poly_degree);
+        context.set_key_rns_num(key_rns.size());
+        context.set_alpha(cc_rns->GetNumPerPartQ());
+        context.set_digit_size(cc_rns->GetNumPartQ());
+        context.set_q_size(cc->GetElementParams()->GetParams().size());
+
+        for (const auto& parms : key_rns) {
+            auto q_i = parms->GetModulus();
+            context.add_q_i(q_i.ConvertToInt());
+
+            auto psi_i = RootOfUnity<NativeInteger>(poly_degree * 2, parms->GetModulus());
+            context.add_psi(psi_i.ConvertToInt());
+        }
+
+        auto scheme = cc->getSchemeId();
+        switch (scheme) {
+            case SCHEME::CKKSRNS_SCHEME: {
+                context.set_scheme(heracles::common::SCHEME_CKKS);
+                // Add CKKS-specific information
+                extractCKKSInfo(context.mutable_ckks_info(), cc);
+            } break;
+            case SCHEME::BGVRNS_SCHEME: {
+                context.set_scheme(heracles::common::SCHEME_BGV);
+                // BGV not fully supported yet
+            } break;
+            case SCHEME::BFVRNS_SCHEME: {
+                context.set_scheme(heracles::common::SCHEME_BFV);
+                // BFV not fully supported yet
+            } break;
+            default:
+                context.set_scheme(heracles::common::SCHEME_CKKS);  // Default fallback
+        }
+
+        return context;
+    }
+
+    /// Extract CKKS-specific information
+    bool extractCKKSInfo(heracles::data::CKKSSpecific* ckks_info, const CryptoContext<Element>& cc) const {
+        // Simplified CKKS info extraction
+        // In a full implementation, this would extract keys, scaling factors, etc.
+        auto cc_rns = std::dynamic_pointer_cast<CryptoParametersRNS>(cc->GetCryptoParameters());
+
+        // Extract scaling factors
+        size_t sizeQ = cc->GetElementParams()->GetParams().size();
+        for (size_t i = 0; i < sizeQ; ++i) {
+            ckks_info->add_scaling_factor_real(cc_rns->GetScalingFactorReal(i));
+            if (i < sizeQ - 1) {
+                ckks_info->add_scaling_factor_real_big(cc_rns->GetScalingFactorRealBig(i));
+            }
+        }
+
+        return true;
+    }
+
+    /// Generate test vector from stored data
+    heracles::data::TestVector generateTestVector(const heracles::fhe_trace::Trace& trace) const {
+        std::cout << "Generating test vector" << std::endl;
+
+        heracles::data::TestVector testVector;
+
+        // Extract symbols from trace instructions
+        std::unordered_set<std::string> usedSymbols;
+
+        for (const auto& instruction : trace.instructions()) {
+            // Add destination symbols
+            for (const auto& dest : instruction.args().dests()) {
+                usedSymbols.insert(dest.symbol_name());
+            }
+            // Add source symbols
+            for (const auto& src : instruction.args().srcs()) {
+                usedSymbols.insert(src.symbol_name());
+            }
+        }
+
+        // For each used symbol, add its data to the test vector if available
+        for (const auto& symbolId : usedSymbols) {
+            if (m_dataObjectPool.find(symbolId) != m_dataObjectPool.end()) {
+                auto& dcrtpolys  = m_dataObjectPool.at(symbolId);
+                auto& symbolData = (*testVector.mutable_sym_data_map())[symbolId];
+
+                std::cout << "Converting DCRTPoly data for symbol: " << symbolId << std::endl;
+
+                // Convert DCRTPoly to protobuf format (expensive conversion only happens once at the very end!)
+                convertDCRTPolyToProtobuf(symbolData.mutable_dcrtpoly(), dcrtpolys);
+            }
+        }
+
+        return testVector;
+    }
+
+    /// Convert DCRTPoly to protobuf format - FAST PARALLEL VERSION (based on old tracing_integration_test)
+    bool convertDCRTPolyToProtobuf(heracles::data::DCRTPoly* proto_dcrtpoly,
+                                   const std::vector<Element>& dcrtpolys) const {
+        for (const auto& dcrtpoly : dcrtpolys) {
+            auto poly_pb      = proto_dcrtpoly->add_polys();
+            const auto& elems = dcrtpoly.GetAllElements();
+
+            poly_pb->set_in_openfhe_evaluation((dcrtpoly.GetFormat() == Format::EVALUATION));
+
+            for (size_t l = 0; l < dcrtpoly.GetNumOfElements(); ++l) {
+                size_t poly_degree = elems[l].GetLength();
+                auto elem_vals     = elems[l].GetValues();
+                auto rns_poly_pb   = poly_pb->add_rns_polys();
+
+                // OPTIMIZATION: Use parallel conversion like the old system
+                std::vector<uint32_t> v_coeffs(poly_degree);
+    #pragma omp parallel for
+                for (size_t j = 0; j < poly_degree; ++j) {
+                    v_coeffs[j] = elem_vals[j].ConvertToInt();
+                }
+
+                *rns_poly_pb->mutable_coeffs() = {v_coeffs.begin(), v_coeffs.end()};
+                rns_poly_pb->set_modulus(elems[l].GetModulus().ConvertToInt());
+            }
+
+            proto_dcrtpoly->set_in_ntt_form((dcrtpolys[0].GetFormat() == Format::EVALUATION));
+        }
+        return true;
+    }
+
+public:  /// Add an instruction to the trace
     void addInstruction(const heracles::fhe_trace::Instruction& instruction) {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_instructions.push_back(instruction);
     }
 
-    /// Reset the trace (clear all instructions)
+    /// Reset the trace (clear all instructions and data pool)
     void reset() {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_instructions.clear();
+        m_dataObjectPool.clear();  // Clear collected objects
     }
 
 private:
     std::string m_filename;
     heracles::fhe_trace::Trace m_trace;
     std::vector<heracles::fhe_trace::Instruction> m_instructions;
-    std::mutex m_mutex;
+    mutable std::mutex m_mutex;
 
     // ID management (same approach as SimpleTracer)
     std::unordered_map<std::string, std::string> m_uniqueID;  // hash -> human-readable ID
     std::unordered_map<std::string, size_t> m_counters;       // type -> counter
+
+    // Data trace support
+    CryptoContext<Element> m_cryptoContext;  // Stored crypto context
+    std::unordered_map<std::string, std::vector<Element>>
+        m_dataObjectPool;  // objectId -> DCRTPoly data (collected during tracing)
+
+    // Cached traces (generated once, reused multiple times)
+    mutable std::unique_ptr<heracles::fhe_trace::Trace> m_cachedFHETrace;
+    mutable std::unique_ptr<heracles::data::FHEContext> m_cachedContext;
+    mutable std::unique_ptr<heracles::data::TestVector> m_cachedTestVector;
+    mutable bool m_tracesGenerated = false;
 
     friend class HeraClesFunctionTracer<Element>;
 };
