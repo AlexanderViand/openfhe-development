@@ -60,7 +60,7 @@ int main() {
 
     // Enable HERACLES tracing
     IF_TRACE(auto tracer = std::make_shared<HeraclesTracer<DCRTPoly>>("simple-ckks-heracles-trace", cc));
-    IF_TRACE(cc->setTracer(std::move(tracer)));
+    IF_TRACE(cc->setTracer(tracer));
 
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension() << std::endl << std::endl;
 
@@ -94,21 +94,8 @@ int main() {
     std::cout << "(x1 * x2) * x2 = " << result << std::endl;
     std::cout << "Estimated precision in bits: " << result->GetLogPrecision() << std::endl;
 
-    // Step 6: Save HERACLES trace
-    IF_TRACE(auto heraclesTracer = std::dynamic_pointer_cast<HeraclesTracer<DCRTPoly>>(cc->getTracer()));
-    IF_TRACE(if (heraclesTracer) {
-        std::cout << "Saving Trace" << std::endl;
-        heraclesTracer->saveTrace();  // Save binary format
-        std::cout << "Saving JSON Trace" << std::endl;
-        heraclesTracer->saveTraceJson();  // Save JSON format for inspection
-        std::cout
-            << "\nHERACLES trace saved to 'simple-ckks-heracles-trace.bin' (binary) and 'simple-ckks-heracles-trace.json' (JSON)"
-            << std::endl;
-    });
-
-    std::cout << "\nNOTE: Relinearization and rescale were performed automatically after EvalMult.\n"
-                 "Check the HERACLES trace files for protobuf-formatted trace data.\n"
-              << std::endl;
+    IF_TRACE(tracer->saveBinaryTrace());
+    IF_TRACE(tracer->saveJsonTrace());
 
     return 0;
 }
