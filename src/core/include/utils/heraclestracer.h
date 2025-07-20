@@ -425,8 +425,7 @@ template <typename Element>
 class HeraclesTracer : public Tracer<Element> {
 public:
     explicit HeraclesTracer(const std::string& filename = "openfhe-heracles-trace") : m_filename(filename) {
-        // Initialize the trace
-        m_trace.set_scheme(heracles::common::SCHEME_CKKS);  // Default to CKKS
+        // Default to CKKS scheme (can be changed via setContext)
     }
 
     explicit HeraclesTracer(const std::string& filename, const CryptoContext<Element>& cc) : m_filename(filename) {
@@ -469,43 +468,57 @@ public:
         // Store the crypto context for data trace generation
         m_cryptoContext = cc;
 
+        // Store context information directly
         auto scheme = cc->getSchemeId();
         if (scheme == lbcrypto::SCHEME::CKKSRNS_SCHEME) {
-            m_trace.set_scheme(heracles::common::SCHEME_CKKS);
+            m_scheme = heracles::common::SCHEME_CKKS;
         }
         else if (scheme == lbcrypto::SCHEME::BFVRNS_SCHEME) {
-            m_trace.set_scheme(heracles::common::SCHEME_BFV);
+            m_scheme = heracles::common::SCHEME_BFV;
         }
         else if (scheme == lbcrypto::SCHEME::BGVRNS_SCHEME) {
-            m_trace.set_scheme(heracles::common::SCHEME_BGV);
+            m_scheme = heracles::common::SCHEME_BGV;
         }
         else {
-            m_trace.set_scheme(heracles::common::SCHEME_CKKS);  // Default fallback
+            m_scheme = heracles::common::SCHEME_CKKS;  // Default fallback
         }
 
-        m_trace.set_n(cc->GetRingDimension());
+        m_ringDimension = cc->GetRingDimension();
 
         // For RNS-based schemes, get additional parameters
         auto cc_rns = std::dynamic_pointer_cast<CryptoParametersRNS>(cc->GetCryptoParameters());
         if (cc_rns) {
-            m_trace.set_key_rns_num(cc_rns->GetParamsQP()->GetParams().size());
-            m_trace.set_dnum(cc_rns->GetNumPartQ());
-            m_trace.set_alpha(cc_rns->GetNumPerPartQ());
+            m_keyRnsNum = cc_rns->GetParamsQP()->GetParams().size();
+            m_dnum      = cc_rns->GetNumPartQ();
+            m_alpha     = cc_rns->GetNumPerPartQ();
         }
 
-        m_trace.set_q_size(cc->GetElementParams()->GetParams().size());
+        m_qSize = cc->GetElementParams()->GetParams().size();
+
+        // Clear cached objects since context changed
+        m_cachedFHETrace.reset();
+        m_cachedContext.reset();
+        m_cachedTestVector.reset();
     }
 
-    /// Generate all traces once and cache them (called without mutex lock)
+    /// Generate all traces once and cache them
     void generateTracesIfNeeded() const {
-        if (m_tracesGenerated) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_cachedFHETrace) {
             return;  // Already generated
         }
 
         std::cout << "Generating traces for the first time..." << std::endl;
 
-        // Generate FHE trace
-        m_cachedFHETrace                            = std::make_unique<heracles::fhe_trace::Trace>(m_trace);
+        // Generate FHE trace directly
+        m_cachedFHETrace = std::make_unique<heracles::fhe_trace::Trace>();
+        m_cachedFHETrace->set_scheme(m_scheme);
+        m_cachedFHETrace->set_n(m_ringDimension);
+        m_cachedFHETrace->set_key_rns_num(m_keyRnsNum);
+        m_cachedFHETrace->set_dnum(m_dnum);
+        m_cachedFHETrace->set_alpha(m_alpha);
+        m_cachedFHETrace->set_q_size(m_qSize);
+
         *(m_cachedFHETrace->mutable_instructions()) = {m_instructions.begin(), m_instructions.end()};
 
         // Generate context and test vector if we have a crypto context
@@ -517,20 +530,17 @@ public:
             m_cachedTestVector = std::make_unique<heracles::data::TestVector>(generateTestVector(*m_cachedFHETrace));
         }
 
-        m_tracesGenerated = true;
         std::cout << "Traces generated and cached!" << std::endl;
     }
 
     /// Get the FHE trace (generates and caches if needed)
     heracles::fhe_trace::Trace getTrace() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
         generateTracesIfNeeded();
         return *m_cachedFHETrace;
     }
 
     /// Get the FHE context (generates and caches if needed)
     heracles::data::FHEContext getFHEContext() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
         if (!m_cryptoContext) {
             throw std::runtime_error("CryptoContext not set. Call setContext() first.");
         }
@@ -540,7 +550,6 @@ public:
 
     /// Get the test vector (generates and caches if needed)
     heracles::data::TestVector getTestVector() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
         if (!m_cryptoContext) {
             throw std::runtime_error("CryptoContext not set. Call setContext() first.");
         }
@@ -550,16 +559,13 @@ public:
 
     /// Save trace to file in binary format
     void saveTrace(const std::string& filename = "") {
-        std::string actualFilename = filename.empty() ? (m_filename + ".bin") : filename;
-        auto trace                 = getTrace();
-        heracles::fhe_trace::store_trace(actualFilename, trace);
+        auto trace = getTrace();
+        heracles::fhe_trace::store_trace(getFilename(filename, ".bin"), trace);
     }
 
     /// Save trace to file in JSON format
     void saveTraceJson(const std::string& filename = "") {
-        std::string actualFilename = filename.empty() ? (m_filename + ".json") : filename;
-
-        // Save FHE trace
+        auto actualFilename = getFilename(filename, ".json");
         std::cout << "Saving FHE trace to JSON: " << actualFilename << std::endl;
         auto trace = getTrace();
         heracles::fhe_trace::store_json_trace(actualFilename, trace);
@@ -572,9 +578,9 @@ public:
             return;
         }
 
-        std::string actualFilename = filename.empty() ? (m_filename + "_data.bin") : filename;
-
+        auto actualFilename = getFilename(filename, "_data.bin");
         std::cout << "Saving data trace..." << std::endl;
+
         auto context    = getFHEContext();
         auto testVector = getTestVector();
 
@@ -601,6 +607,11 @@ public:
     }
 
 private:
+    /// Helper to get actual filename with default extension
+    std::string getFilename(const std::string& filename, const std::string& defaultExtension) const {
+        return filename.empty() ? (m_filename + defaultExtension) : filename;
+    }
+
     /// Extract FHE context from OpenFHE CryptoContext
     heracles::data::FHEContext extractFHEContext(const CryptoContext<Element>& cc) const {
         heracles::data::FHEContext context;
@@ -740,13 +751,25 @@ public:  /// Add an instruction to the trace
         std::lock_guard<std::mutex> lock(m_mutex);
         m_instructions.clear();
         m_dataObjectPool.clear();  // Clear collected objects
+
+        // Clear cached objects to force regeneration
+        m_cachedFHETrace.reset();
+        m_cachedContext.reset();
+        m_cachedTestVector.reset();
     }
 
 private:
     std::string m_filename;
-    heracles::fhe_trace::Trace m_trace;
     std::vector<heracles::fhe_trace::Instruction> m_instructions;
     mutable std::mutex m_mutex;
+
+    // Context information (previously stored in m_trace)
+    heracles::common::Scheme m_scheme = heracles::common::SCHEME_CKKS;
+    uint32_t m_ringDimension          = 0;
+    uint32_t m_keyRnsNum              = 0;
+    uint32_t m_dnum                   = 0;
+    uint32_t m_alpha                  = 0;
+    uint32_t m_qSize                  = 0;
 
     // ID management (same approach as SimpleTracer)
     std::unordered_map<std::string, std::string> m_uniqueID;  // hash -> human-readable ID
@@ -761,7 +784,6 @@ private:
     mutable std::unique_ptr<heracles::fhe_trace::Trace> m_cachedFHETrace;
     mutable std::unique_ptr<heracles::data::FHEContext> m_cachedContext;
     mutable std::unique_ptr<heracles::data::TestVector> m_cachedTestVector;
-    mutable bool m_tracesGenerated = false;
 
     friend class HeraClesFunctionTracer<Element>;
 };
