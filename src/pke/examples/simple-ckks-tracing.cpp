@@ -43,9 +43,9 @@ using namespace lbcrypto;
 
 int main() {
     // Step 1: Setup CryptoContext
-    uint32_t multDepth = 2; // At least 2 to see multiple rescale/relin
+    uint32_t multDepth    = 2;  // At least 2 to see multiple rescale/relin
     uint32_t scaleModSize = 50;
-    uint32_t batchSize = 8;
+    uint32_t batchSize    = 8;
 
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetMultiplicativeDepth(multDepth);
@@ -80,23 +80,22 @@ int main() {
     auto c2 = cc->Encrypt(keys.publicKey, ptxt2);
 
     // Step 4: Homomorphic computation
-    // This multiplication will trigger both relin and rescale automatically.
-    auto cMul = cc->EvalMult(c1, c2);
-    // A second multiplication will trigger another relin and rescale.
+    auto cMul  = cc->EvalMult(c1, c2);
     auto cMul2 = cc->EvalMult(cMul, c2);
-    // (No explicit call to EvalRelinearize or EvalRescale!)
+    auto add   = cc->EvalAdd(cMul, cMul2);
 
     // Step 5: Decryption and output
     Plaintext result;
     std::cout.precision(8);
 
-    cc->Decrypt(keys.secretKey, cMul2, &result);
+    cc->Decrypt(keys.secretKey, add, &result);
     result->SetLength(batchSize);
     std::cout << "(x1 * x2) * x2 = " << result << std::endl;
     std::cout << "Estimated precision in bits: " << result->GetLogPrecision() << std::endl;
 
     std::cout << "\nNOTE: Relinearization and rescale were performed automatically after EvalMult.\n"
-                 "Check the trace file 'simple-ckks-tracing-trace.txt' for details.\n" << std::endl;
+                 "Check the trace file 'simple-ckks-tracing-trace.txt' for details.\n"
+              << std::endl;
 
     return 0;
-} 
+}

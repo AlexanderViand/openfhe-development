@@ -33,6 +33,9 @@
 
 #include "key/keypair.h"
 #include "key/evalkey.h"
+#include "cryptocontext.h"
+
+#include "utils/tracing.h"
 
 // the code below is from base-scheme-impl.cpp
 namespace lbcrypto {
@@ -114,9 +117,14 @@ Ciphertext<Element> SchemeBase<Element>::ComposedEvalMult(ConstCiphertext<Elemen
     if (!evalKey)
         OPENFHE_THROW("Input evaluation key is nullptr");
 
+    TRACER(ciphertext1->GetCryptoContext());
+    FUNC_TRACER("SchemeBase::ComposedEvalMult", {ciphertext1, ciphertext2});
+    IF_T(t->registerInput(evalKey, "evalKey"));
+
     auto result = m_LeveledSHE->ComposedEvalMult(ciphertext1, ciphertext2, evalKey);
     result->SetKeyTag(evalKey->GetKeyTag());
-    return result;
+
+    return REGISTER_IF_T(result);
 }
 
 template <typename Element>
@@ -125,9 +133,14 @@ Ciphertext<Element> SchemeBase<Element>::ModReduce(ConstCiphertext<Element> ciph
     if (!ciphertext)
         OPENFHE_THROW("Input ciphertext is nullptr");
 
+    TRACER(ciphertext->GetCryptoContext());
+    FUNC_TRACER("SchemeBase::ModReduce", {ciphertext});
+    IF_T(t->registerInput(levels, "levels"));
+
     auto result = m_LeveledSHE->ModReduce(ciphertext, levels);
     result->SetKeyTag(ciphertext->GetKeyTag());
-    return result;
+
+    return REGISTER_IF_T(result);
 }
 
 template <typename Element>
@@ -137,11 +150,16 @@ std::shared_ptr<std::map<usint, EvalKey<Element>>> SchemeBase<Element>::EvalSumK
     if (!privateKey)
         OPENFHE_THROW("Input private key is nullptr");
 
+    TRACER(privateKey->GetCryptoContext());
+    FUNC_TRACER("SchemeBase::EvalSumKeyGen");
+    IF_T(t->registerInput(privateKey, "privateKey"); if (publicKey) t->registerInput(publicKey, "publicKey"););
+
     auto evalKeyMap = m_AdvancedSHE->EvalSumKeyGen(privateKey, publicKey);
     for (auto& key : *evalKeyMap) {
         key.second->SetKeyTag(privateKey->GetKeyTag());
     }
-    return evalKeyMap;
+
+    return REGISTER_IF_T(evalKeyMap);
 }
 
 template <typename Element>
@@ -151,11 +169,17 @@ std::shared_ptr<std::map<usint, EvalKey<Element>>> SchemeBase<Element>::EvalSumR
     if (!privateKey)
         OPENFHE_THROW("Input private key is nullptr");
 
+    TRACER(privateKey->GetCryptoContext());
+    FUNC_TRACER("SchemeBase::EvalSumRowsKeyGen");
+    IF_T(t->registerInput(privateKey, "privateKey"); t->registerInput(rowSize, "rowSize");
+         t->registerInput(subringDim, "subringDim"););
+
     auto evalKeyMap = m_AdvancedSHE->EvalSumRowsKeyGen(privateKey, rowSize, subringDim, indices);
     for (auto& key : *evalKeyMap) {
         key.second->SetKeyTag(privateKey->GetKeyTag());
     }
-    return evalKeyMap;
+
+    return REGISTER_IF_T(evalKeyMap);
 }
 
 template <typename Element>
@@ -165,11 +189,16 @@ std::shared_ptr<std::map<usint, EvalKey<Element>>> SchemeBase<Element>::EvalSumC
     if (!privateKey)
         OPENFHE_THROW("Input private key is nullptr");
 
+    TRACER(privateKey->GetCryptoContext());
+    FUNC_TRACER("SchemeBase::EvalSumColsKeyGen");
+    IF_T(t->registerInput(privateKey, "privateKey"));
+
     auto evalKeyMap = m_AdvancedSHE->EvalSumColsKeyGen(privateKey, indices);
     for (auto& key : *evalKeyMap) {
         key.second->SetKeyTag(privateKey->GetKeyTag());
     }
-    return evalKeyMap;
+
+    return REGISTER_IF_T(evalKeyMap);
 }
 
 template <typename Element>

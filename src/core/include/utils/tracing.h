@@ -31,6 +31,22 @@
 #define MACRO_HELPER(_1, _2, MACRO, ...) MACRO
 #define REGISTER_IF_TRACE(...)           MACRO_HELPER(__VA_ARGS__, REGISTER_IF_TRACE_2, REGISTER_IF_TRACE_1)(__VA_ARGS__)
 
+/// HELPER TO CREATE A TRACER FROM A CC
+#ifdef ENABLE_TRACER_SUPPORT
+    #define TRACER(CC)       auto tracer = CC ? CC->getTracer() : nullptr;
+    #define FUNC_TRACER(...) auto t = tracer ? tracer->StartFunctionTrace(__VA_ARGS__) : nullptr;
+    #define IF_T(...)    \
+        if (t) {         \
+            __VA_ARGS__; \
+        }
+    #define REGISTER_IF_T(x) t ? t->registerOutput(x) : x
+#else
+    #define TRACER(CC)
+    #define FUNC_TRACER(...)
+    #define IF_T(...)
+    #define REGISTER_IF_T(x) x
+#endif
+
 // If tracing is disabled, none of these definitions should be needed
 #ifdef ENABLE_TRACER_SUPPORT
     #include "ciphertext-fwd.h"
