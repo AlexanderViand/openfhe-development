@@ -282,7 +282,7 @@ void CryptoContextImpl<Element>::EvalAtIndexKeyGen(const PrivateKey<Element> pri
     IF_TRACE(auto t = m_tracer->StartFunctionTrace("EvalAtIndexKeyGen"));
     IF_TRACE(t->registerInput(privateKey));
     IF_TRACE(t->registerInput(indexList));
-    IF_TRACE(t->registerInput(publicKey));
+    IF_TRACE(if (publicKey) t->registerInput(publicKey));  // publicKey is unused
     ValidateKey(privateKey);
     if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag()) {
         OPENFHE_THROW("Public key passed to EvalAtIndexKeyGen does not match private key");

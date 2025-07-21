@@ -36,7 +36,7 @@
 #define PROFILE
 
 #include "openfhe.h"
-#include "utils/simpletracer.h"
+#include "utils/heraclestracer.h"
 #include <vector>
 #include <iostream>
 
@@ -185,8 +185,9 @@ int main(int argc, char* argv[]) {
     cc->Enable(KEYSWITCH);
     cc->Enable(LEVELEDSHE);
 
-    IF_TRACE(auto tracer = std::make_shared<SimpleTracer<DCRTPoly>>("simple-real-numbers-composite-scaling-trace.txt"));
-    IF_TRACE(cc->setTracer(std::move(tracer)));
+    IF_TRACE(auto tracer = std::make_shared<HeraclesTracer<DCRTPoly>>(
+                 "simple-real-numbers-composite-scaling-heracles-trace", cc));
+    IF_TRACE(cc->setTracer(tracer));
 
     std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension() << std::endl << std::endl;
 
@@ -327,6 +328,9 @@ int main(int argc, char* argv[]) {
     cc->Decrypt(keys.secretKey, cAddNegDouble, &result);
     result->SetLength(batchSize);
     std::cout << "x1 + (-0.5) = " << result << std::endl;
+
+    IF_TRACE(tracer->saveBinaryTrace());
+    IF_TRACE(tracer->saveJsonTrace());
 
     return 0;
 }
