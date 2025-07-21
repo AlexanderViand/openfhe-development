@@ -391,11 +391,11 @@ protected:
     virtual Plaintext MakeCKKSPackedPlaintextInternal(const std::vector<std::complex<double>>& value,
                                                       size_t noiseScaleDeg, uint32_t level,
                                                       const std::shared_ptr<ParmType> params, uint32_t slots) const {
-        IF_TRACE(auto t_ckks = m_tracer->StartFunctionTrace("MakeCKKSPackedPlaintext"));
-        IF_TRACE(t_ckks->registerInput(value, "value"));
-        IF_TRACE(t_ckks->registerInput(noiseScaleDeg, "noiseScaleDeg"));
-        IF_TRACE(t_ckks->registerInput(static_cast<size_t>(level), "level"));
-        IF_TRACE(t_ckks->registerInput(static_cast<size_t>(slots), "slots"));
+        IF_TRACE(auto t = m_tracer->StartFunctionTrace("MakeCKKSPackedPlaintext"));
+        IF_TRACE(t->registerInput(value, "value"));
+        IF_TRACE(t->registerInput(noiseScaleDeg, "noiseScaleDeg"));
+        IF_TRACE(t->registerInput(static_cast<size_t>(level), "level"));
+        IF_TRACE(t->registerInput(static_cast<size_t>(slots), "slots"));
         VerifyCKKSScheme(__func__);
         const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRNS>(GetCryptoParameters());
         if (level > 0) {
@@ -475,7 +475,7 @@ protected:
         if (cryptoParams->GetScalingTechnique() == FLEXIBLEAUTOEXT && level == 0) {
             p->SetNoiseScaleDeg(2);
         }
-        return p;
+        return REGISTER_IF_TRACE(p);
     }
 
     /**

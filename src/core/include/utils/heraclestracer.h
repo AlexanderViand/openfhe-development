@@ -40,6 +40,7 @@
 
 namespace lbcrypto {
 
+// Note: while this follows the standard template <typename Element> conventions of OpenFHE, it's really only designed to work for DCRTPoly...
 template <typename Element>
 class HeraclesTracer;
 
@@ -87,7 +88,7 @@ public:
     // Input registration methods
 
     /// Register data with in/out flag to avoid duplication of conversion logic
-    void registerData(std::vector<DCRTPoly> elements, std::string name, bool isOutput) {
+    void registerData(std::vector<Element> elements, std::string name, bool isOutput = false) {
         if (elements.empty())
             throw std::runtime_error("Cannot register empty data.");
 
@@ -103,9 +104,12 @@ public:
         // Add to appropriate member variable for later processing in destructor
         if (isOutput) {
             m_destinations.push_back(operand);
+            m_tracer->trackOutput(id);
         }
         else {
             m_sources.push_back(operand);
+            // Check for orphaned inputs (objects that weren't registered as outputs)
+            m_tracer->checkInput(id, m_currentInstruction.op());
         }
 
         // Add to TestVector: Convert DCRTPoly to protobuf format
@@ -123,24 +127,17 @@ public:
         m_tracer->storeData(id, data);
     }
 
-    /// Helper method for registering DCRTPoly vectors
-    void registerInputVector(std::vector<DCRTPoly> elements, std::string name) {
-        registerData(elements, name, false);  // false = input
-    }
-
-    /// Helper method for registering single DCRTPoly
-    void registerInputSingle(Element element, std::string name) {
-        registerInputVector(std::vector<Element>(1, element), name);
+    // Helper for single elements
+    void registerData(Element element, std::string name, bool isOutput = false) {
+        registerData(std::vector<Element>(1, element), name, isOutput);
     }
 
     void registerInput(Ciphertext<Element> ciphertext, std::string name, bool isMutable) override {
-        name = name.empty() ? "ciphertext" : name;
-        registerInputVector(ciphertext->GetElements(), name);
+        registerData(ciphertext->GetElements(), name.empty() ? "ciphertext" : name);
     }
 
     void registerInput(ConstCiphertext<Element> ciphertext, std::string name, bool isMutable) override {
-        name = name.empty() ? "ciphertext" : name;
-        registerInputVector(ciphertext->GetElements(), name);
+        registerData(ciphertext->GetElements(), name.empty() ? "ciphertext" : name);
     }
 
     // TODO: move this logic up to Tracer as an overridable default, since it doesn't really rely on anything tracer-specific
@@ -178,13 +175,11 @@ public:
     }
 
     void registerInput(Plaintext plaintext, std::string name, bool isMutable) override {
-        name = name.empty() ? "plaintext" : name;
-        registerInputSingle(plaintext->GetElement<Element>(), name);
+        registerData(plaintext->GetElement<Element>(), name.empty() ? "plaintext" : name);
     }
 
     void registerInput(ConstPlaintext plaintext, std::string name, bool isMutable) override {
-        name = name.empty() ? "plaintext" : name;
-        registerInputSingle(plaintext->GetElement<Element>(), name);
+        registerData(plaintext->GetElement<Element>(), name.empty() ? "plaintext" : name);
     }
 
     // Nearly the same as ctxt version
@@ -205,19 +200,18 @@ public:
     }
 
     void registerInput(const PublicKey<Element> publicKey, std::string name, bool isMutable) override {
-        name = name.empty() ? "publickey" : name;
-        registerInputVector(publicKey->GetPublicElements(), name);
+        registerData(publicKey->GetPublicElements(), name.empty() ? "publickey" : name, false);
     }
 
     void registerInput(const PrivateKey<Element> privateKey, std::string name, bool isMutable) override {
-        name = name.empty() ? "secretkey" : name;
-        registerInputSingle(privateKey->GetPrivateElement(), name);
+        registerData(privateKey->GetPrivateElement(), name.empty() ? "secretkey" : name, false);
     }
 
     void registerInput(const EvalKey<Element> evalKey, std::string name, bool isMutable) override {
         name = name.empty() ? "evalkey" : name;
         // EvalKey doesn't have GetElement method, just skip for now
         // FIXME: implement proper EvalKey extraction
+        std::cout << "Warning: EvalKey registration not yet implemented in HeraclesTracer." << std::endl;
         (void)evalKey;  // Suppress unused parameter warning
     }
 
@@ -323,7 +317,10 @@ public:
     }
 
     KeyPair<Element> registerOutput(KeyPair<Element> keyPair, std::string name) override {
-        // FIXME
+        if (keyPair.publicKey)
+            registerData(keyPair.publicKey->GetPublicElements(), "publickey", true);
+        if (keyPair.secretKey)
+            registerData(keyPair.secretKey->GetPrivateElement(), "secretkey", true);
         return keyPair;
     }
 
@@ -522,6 +519,23 @@ public:
         m_FHETrace->add_instructions()->CopyFrom(instruction);
     }
 
+    /// Track an object ID as a known output
+    void trackOutput(const std::string& objectId) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_knownOutputs.insert(objectId);
+    }
+
+    /// Check if an input object ID was previously registered as an output
+    /// Prints a warning if the object appears to be "orphaned" (not from any traced output)
+    void checkInput(const std::string& objectId, const std::string& operationName) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_knownOutputs.find(objectId) == m_knownOutputs.end()) {
+            std::cout << "WARNING: Object '" << objectId << "' used as input in operation '" << operationName
+                      << "' but was never registered as output of any traced operation. "
+                      << "This may indicate a missing tracing call." << std::endl;
+        }
+    }
+
     /// Check if a certain data element already exists
     bool hasData(const std::string& objectID) {
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -589,6 +603,9 @@ public:
     // ID management (accessible by HeraclesFunctionTracer for naming logic)
     std::unordered_map<std::string, std::string> m_uniqueID;  // hash -> human-readable ID
     std::unordered_map<std::string, size_t> m_counters;       // type -> counter
+
+    // Track known output IDs to detect missing tracing calls
+    std::unordered_set<std::string> m_knownOutputs;  // object IDs that have been registered as outputs
 
 private:
     mutable std::mutex m_mutex;
