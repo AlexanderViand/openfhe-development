@@ -36,6 +36,7 @@
 #define PROFILE
 
 #include "openfhe.h"
+#include "utils/simpletracer.h"
 
 using namespace lbcrypto;
 
@@ -120,6 +121,7 @@ int main() {
     parameters.SetBatchSize(batchSize);
 
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
+    IF_TRACE(cc->setTracer(std::make_shared<SimpleTracer<DCRTPoly>>("simple-real-numbers.txt")));
 
     // Enable the features that you wish to use
     cc->Enable(PKE);

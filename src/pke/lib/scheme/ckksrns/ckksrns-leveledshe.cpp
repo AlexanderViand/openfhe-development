@@ -41,6 +41,7 @@ CKKS implementation. See https://eprint.iacr.org/2020/1118 for details.
 #include "scheme/ckksrns/ckksrns-leveledshe.h"
 
 #include "schemebase/base-scheme.h"
+#include "utils/tracing.h"
 
 #include <map>
 #include <memory>
@@ -61,8 +62,12 @@ Ciphertext<DCRTPoly> LeveledSHECKKSRNS::EvalAdd(ConstCiphertext<DCRTPoly> cipher
 }
 
 void LeveledSHECKKSRNS::EvalAddInPlace(Ciphertext<DCRTPoly>& ciphertext, double operand) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHECKKSRNS::EvalAddInPlace(ciphertext, double)", {ciphertext}));
+    IF_TRACE(t->registerInput(operand, "operand"));
     std::vector<DCRTPoly>& cv = ciphertext->GetElements();
     cv[0]                     = cv[0] + GetElementForEvalAddOrSub(ciphertext, operand);
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 Ciphertext<DCRTPoly> LeveledSHECKKSRNS::EvalAdd(ConstCiphertext<DCRTPoly> ciphertext,
@@ -73,6 +78,9 @@ Ciphertext<DCRTPoly> LeveledSHECKKSRNS::EvalAdd(ConstCiphertext<DCRTPoly> cipher
 }
 
 void LeveledSHECKKSRNS::EvalAddInPlace(Ciphertext<DCRTPoly>& ciphertext, std::complex<double> operand) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHECKKSRNS::EvalAddInPlace(ciphertext, complex<double>)", {ciphertext}));
+    IF_TRACE(t->registerInput(operand, "operand"));
     std::vector<DCRTPoly>& cv              = ciphertext->GetElements();
     std::vector<DCRTPoly::Integer> elemsRe = GetElementForEvalAddOrSub(ciphertext, std::fabs(operand.real()));
     std::vector<DCRTPoly::Integer> elemsIm = GetElementForEvalAddOrSub(ciphertext, std::fabs(operand.imag()));
@@ -93,6 +101,7 @@ void LeveledSHECKKSRNS::EvalAddInPlace(Ciphertext<DCRTPoly>& ciphertext, std::co
     elemsComplex.SetFormat(Format::EVALUATION);
 
     cv[0] += elemsComplex;
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 /////////////////////////////////////////
@@ -106,8 +115,13 @@ Ciphertext<DCRTPoly> LeveledSHECKKSRNS::EvalSub(ConstCiphertext<DCRTPoly> cipher
 }
 
 void LeveledSHECKKSRNS::EvalSubInPlace(Ciphertext<DCRTPoly>& ciphertext, double operand) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHECKKSRNS::EvalSubInPlace(ciphertext, double)", {ciphertext}));
+    IF_TRACE(t->registerInput(operand, "operand"));
+
     std::vector<DCRTPoly>& cv = ciphertext->GetElements();
     cv[0]                     = cv[0] - GetElementForEvalAddOrSub(ciphertext, operand);
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 /////////////////////////////////////////
@@ -121,6 +135,10 @@ Ciphertext<DCRTPoly> LeveledSHECKKSRNS::EvalMult(ConstCiphertext<DCRTPoly> ciphe
 }
 
 void LeveledSHECKKSRNS::EvalMultInPlace(Ciphertext<DCRTPoly>& ciphertext, double operand) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHECKKSRNS::EvalMultInPlace(ciphertext, double)", {ciphertext}));
+    IF_TRACE(t->registerInput(operand, "operand"));
+
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(ciphertext->GetCryptoParameters());
 
     if (cryptoParams->GetScalingTechnique() != FIXEDMANUAL) {
@@ -130,6 +148,7 @@ void LeveledSHECKKSRNS::EvalMultInPlace(Ciphertext<DCRTPoly>& ciphertext, double
     }
 
     EvalMultCoreInPlace(ciphertext, operand);
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 Ciphertext<DCRTPoly> LeveledSHECKKSRNS::EvalMult(ConstCiphertext<DCRTPoly> ciphertext,
@@ -140,6 +159,10 @@ Ciphertext<DCRTPoly> LeveledSHECKKSRNS::EvalMult(ConstCiphertext<DCRTPoly> ciphe
 }
 
 void LeveledSHECKKSRNS::EvalMultInPlace(Ciphertext<DCRTPoly>& ciphertext, std::complex<double> operand) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHECKKSRNS::EvalMultInPlace(ciphertext, complex<double>)", {ciphertext}));
+    IF_TRACE(t->registerInput(operand, "operand"));
+
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(ciphertext->GetCryptoParameters());
 
     if (cryptoParams->GetScalingTechnique() != FIXEDMANUAL) {
@@ -149,14 +172,21 @@ void LeveledSHECKKSRNS::EvalMultInPlace(Ciphertext<DCRTPoly>& ciphertext, std::c
     }
 
     EvalMultCoreInPlace(ciphertext, operand);
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 void LeveledSHECKKSRNS::EvalMultInPlace(Ciphertext<DCRTPoly>& ciphertext, ConstPlaintext plaintext) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHECKKSRNS::EvalMultInPlace(ciphertext, plaintext)", {ciphertext}));
+    IF_TRACE(t->registerInput(plaintext, "plaintext"));
+
     LeveledSHERNS::EvalMultInPlace(ciphertext, plaintext);
 
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(ciphertext->GetCryptoParameters());
     if (cryptoParams->GetScalingTechnique() != NORESCALE)
         ciphertext->SetScalingFactor(ciphertext->GetScalingFactor() * ciphertext->GetScalingFactor());
+
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 /////////////////////////////////////////
@@ -168,6 +198,10 @@ void LeveledSHECKKSRNS::EvalMultInPlace(Ciphertext<DCRTPoly>& ciphertext, ConstP
 /////////////////////////////////////
 
 void LeveledSHECKKSRNS::ModReduceInternalInPlace(Ciphertext<DCRTPoly>& ciphertext, size_t levels) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHECKKSRNS::ModReduceInternalInPlace", {ciphertext}));
+    IF_TRACE(t->registerInput(levels, "levels"));
+
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(ciphertext->GetCryptoParameters());
 
     std::vector<DCRTPoly>& cv = ciphertext->GetElements();
@@ -190,6 +224,8 @@ void LeveledSHECKKSRNS::ModReduceInternalInPlace(Ciphertext<DCRTPoly>& ciphertex
         double modReduceFactor = cryptoParams->GetModReduceFactor(sizeQl - 1 - i);
         ciphertext->SetScalingFactor(ciphertext->GetScalingFactor() / modReduceFactor);
     }
+
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 /////////////////////////////////////
@@ -197,11 +233,17 @@ void LeveledSHECKKSRNS::ModReduceInternalInPlace(Ciphertext<DCRTPoly>& ciphertex
 /////////////////////////////////////
 
 void LeveledSHECKKSRNS::LevelReduceInternalInPlace(Ciphertext<DCRTPoly>& ciphertext, size_t levels) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHECKKSRNS::LevelReduceInternalInPlace", {ciphertext}));
+    IF_TRACE(t->registerInput(levels, "levels"));
+
     std::vector<DCRTPoly>& elements = ciphertext->GetElements();
     for (auto& element : elements) {
         element.DropLastElements(levels);
     }
     ciphertext->SetLevel(ciphertext->GetLevel() + levels);
+
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 /////////////////////////////////////
