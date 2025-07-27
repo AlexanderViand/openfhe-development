@@ -32,6 +32,7 @@
 #define REGISTER_IF_TRACE(...)           MACRO_HELPER(__VA_ARGS__, REGISTER_IF_TRACE_2, REGISTER_IF_TRACE_1)(__VA_ARGS__)
 
 /// HELPER TO CREATE A TRACER FROM A CC
+// FIXME: we can probably save a lot of the checking stuff,  since cc always has at least a NullTracer/NullFunctionTracer so tracer and t should never be nullptr!
 #ifdef ENABLE_TRACER_SUPPORT
     #define TRACER(CC)       auto tracer = CC ? CC->getTracer() : nullptr;
     #define FUNC_TRACER(...) auto t = tracer ? tracer->StartFunctionTrace(__VA_ARGS__) : nullptr;

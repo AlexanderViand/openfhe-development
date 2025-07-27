@@ -15,6 +15,7 @@ doxyoutput/
 
 
 .ipynb_checkpoints
+.cache/
 
 test/build
 test/bin
