@@ -24,7 +24,7 @@ file (GLOB BMARK_SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
 foreach (app ${BMARK_SRC_FILES})
 	get_filename_component ( exe ${app} NAME_WE )
 	add_executable ( ${exe} ${app} )
-	set_property(TARGET ${exe} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/benchmark)
+        set_property(TARGET ${exe} PROPERTY RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin/benchmark)
 	target_include_directories( ${exe} PUBLIC ../third-party/google-benchmark/include )
 	set_target_properties( ${exe} PROPERTIES COMPILE_FLAGS
 		"${REGEX_FLAG} -DHAVE_STEADY_CLOCK -DNDEBUG ${WARNING_FLAG}" )
