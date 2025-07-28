@@ -563,7 +563,7 @@ void LeveledSHERNS::AdjustLevelsInPlace(Ciphertext<DCRTPoly>& ciphertext1, Ciphe
 void LeveledSHERNS::AdjustForAddOrSubInPlace(Ciphertext<DCRTPoly>& ciphertext1,
                                              Ciphertext<DCRTPoly>& ciphertext2) const {
     IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
-                 "LeveledSHERNS::AdjustForAddOrSubInPlace(ciphertext1, ciphertext2)", {ciphertext1, ciphertext2}));
+                 "LeveledSHERNS::AdjustForAddOrSubInPlace(ciphertext, ciphertext)", {ciphertext1, ciphertext2}));
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersRNS>(ciphertext1->GetCryptoParameters());
 
     if (cryptoParams->GetScalingTechnique() == FIXEDMANUAL) {

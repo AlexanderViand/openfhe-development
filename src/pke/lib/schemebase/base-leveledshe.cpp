@@ -638,6 +638,9 @@ Ciphertext<Element> LeveledSHEBase<Element>::EvalAddCore(ConstCiphertext<Element
 template <class Element>
 void LeveledSHEBase<Element>::EvalAddCoreInPlace(Ciphertext<Element>& ciphertext1,
                                                  ConstCiphertext<Element> ciphertext2) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase<Element>::EvalAddCoreInPlace(ciphertext, ciphertext)", {ciphertext1, ciphertext2}));
+
     VerifyNumOfTowers(ciphertext1, ciphertext2);
     std::vector<Element>& cv1       = ciphertext1->GetElements();
     const std::vector<Element>& cv2 = ciphertext2->GetElements();
@@ -656,6 +659,7 @@ void LeveledSHEBase<Element>::EvalAddCoreInPlace(Ciphertext<Element>& ciphertext
             cv1.emplace_back(cv2[i]);
         }
     }
+    IF_TRACE(t->registerOutput(ciphertext1, "ciphertext1"));
 }
 
 template <class Element>
@@ -669,6 +673,9 @@ Ciphertext<Element> LeveledSHEBase<Element>::EvalSubCore(ConstCiphertext<Element
 template <class Element>
 void LeveledSHEBase<Element>::EvalSubCoreInPlace(Ciphertext<Element>& ciphertext1,
                                                  ConstCiphertext<Element> ciphertext2) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase<Element>::EvalSubCoreInPlace(ciphertext, ciphertext)", {ciphertext1, ciphertext2}));
+
     VerifyNumOfTowers(ciphertext1, ciphertext2);
     std::vector<Element>& cv1       = ciphertext1->GetElements();
     const std::vector<Element>& cv2 = ciphertext2->GetElements();
@@ -687,11 +694,15 @@ void LeveledSHEBase<Element>::EvalSubCoreInPlace(Ciphertext<Element>& ciphertext
             cv1.emplace_back(cv2[i].Negate());
         }
     }
+    IF_TRACE(t->registerOutput(ciphertext1, "ciphertext1"));
 }
 
 template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalMultCore(ConstCiphertext<Element> ciphertext1,
                                                           ConstCiphertext<Element> ciphertext2) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase<Element>::EvalMultCore(ciphertext, ciphertext)", {ciphertext1, ciphertext2}));
+
     VerifyNumOfTowers(ciphertext1, ciphertext2);
     auto result = ciphertext1->CloneEmpty();
 
@@ -729,7 +740,7 @@ Ciphertext<Element> LeveledSHEBase<Element>::EvalMultCore(ConstCiphertext<Elemen
     const auto plainMod = ciphertext1->GetCryptoParameters()->GetPlaintextModulus();
     result->SetScalingFactorInt(
         ciphertext1->GetScalingFactorInt().ModMul(ciphertext2->GetScalingFactorInt(), plainMod));
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 template <class Element>
