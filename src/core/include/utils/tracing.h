@@ -53,27 +53,6 @@ namespace lbcrypto {
 template <typename Element>
 class KeyPair;
 
-/// Tracking for data movements
-template <typename Element>
-struct DataTracer {
-    virtual ~DataTracer() = default;
-
-    virtual void registerSource(Ciphertext<Element> ciphertext, std::string name = "")       = 0;
-    virtual void registerSource(ConstCiphertext<Element> ciphertext, std::string name = "")  = 0;
-    virtual void registerSource(Plaintext plaintext, std::string name = "")                  = 0;
-    virtual void registerSource(ConstPlaintext plaintext, std::string name = "")             = 0;
-    virtual void registerSource(const PublicKey<Element> publicKey, std::string name = "")   = 0;
-    virtual void registerSource(const PrivateKey<Element> privateKey, std::string name = "") = 0;
-    // FIXME: Add missing data types (e.g. evaluation keys and other metadata)
-
-    virtual void registerDestination(Ciphertext<Element> ciphertext, std::string name = "")       = 0;
-    virtual void registerDestination(ConstCiphertext<Element> ciphertext, std::string name = "")  = 0;
-    virtual void registerDestination(Plaintext plaintext, std::string name = "")                  = 0;
-    virtual void registerDestination(ConstPlaintext plaintext, std::string name = "")             = 0;
-    virtual void registerDestination(const PublicKey<Element> publicKey, std::string name = "")   = 0;
-    virtual void registerDestination(const PrivateKey<Element> privateKey, std::string name = "") = 0;
-};
-
 /// Opens a scope for a specific function (e.g., a CryptoContext Eval... Function)
 /// and keeps track of the inputs and outputs at the top-level.
 /// Any calls to the Tracer that occur while inside this scope should be recorded
@@ -171,30 +150,6 @@ public:
 
     virtual std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(
         std::string function_name, std::initializer_list<ConstCiphertext<Element>> ciphertext_inputs) = 0;
-
-    virtual std::unique_ptr<DataTracer<Element>> TraceDataUpdate(std::string function_Name) = 0;
-};
-
-/// A null data tracer that does nothing when called
-template <typename Element>
-class NullDataTracer : public DataTracer<Element> {
-public:
-    NullDataTracer()                   = default;
-    virtual ~NullDataTracer() override = default;
-
-    virtual void registerSource(Ciphertext<Element>, std::string) override {}
-    virtual void registerSource(ConstCiphertext<Element>, std::string) override {}
-    virtual void registerSource(Plaintext, std::string) override {}
-    virtual void registerSource(ConstPlaintext, std::string) override {}
-    virtual void registerSource(const PublicKey<Element>, std::string) override {}
-    virtual void registerSource(const PrivateKey<Element>, std::string) override {}
-
-    virtual void registerDestination(Ciphertext<Element>, std::string) override {}
-    virtual void registerDestination(ConstCiphertext<Element>, std::string) override {}
-    virtual void registerDestination(Plaintext, std::string) override {}
-    virtual void registerDestination(ConstPlaintext, std::string) override {}
-    virtual void registerDestination(const PublicKey<Element>, std::string) override {}
-    virtual void registerDestination(const PrivateKey<Element>, std::string) override {}
 };
 
 /// A null function trace that does nothing when called.
@@ -289,10 +244,6 @@ public:
     virtual std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(
         std::string function_name, std::initializer_list<ConstCiphertext<Element>> ciphertext_inputs) override {
         return std::make_unique<NullFunctionTracer<Element>>();
-    }
-
-    virtual std::unique_ptr<DataTracer<Element>> TraceDataUpdate(std::string function_name) override {
-        return std::make_unique<NullDataTracer<Element>>();
     }
 };
 

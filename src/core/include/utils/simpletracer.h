@@ -343,10 +343,6 @@ public:
         return tracer;
     }
 
-    virtual std::unique_ptr<DataTracer<Element>> TraceDataUpdate(std::string function_name) override {
-        return std::make_unique<NullDataTracer<Element>>();
-    }
-
     void EndFunction() {
         if (m_level > 0)
             m_level -= 2;
