@@ -143,16 +143,42 @@ class Tracer {
 public:
     virtual ~Tracer() = default;
 
-    virtual std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(std::string function_name) = 0;
+    std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(std::string function_name) {
+        return createFunctionTracer(function_name);
+    }
 
-    virtual std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(
-        std::string function_name, std::initializer_list<Ciphertext<Element>> ciphertext_inputs) = 0;
+    std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(
+        std::string function_name, std::initializer_list<Ciphertext<Element>> ciphertext_inputs,
+        std::initializer_list<std::string> names = {}) {
+        auto tracer = createFunctionTracer(function_name);
+        tracer->registerInputs(ciphertext_inputs, names);
+        return tracer;
+    }
 
-    virtual std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(
-        std::string function_name, std::initializer_list<ConstCiphertext<Element>> ciphertext_inputs) = 0;
+    std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(
+        std::string function_name, std::initializer_list<ConstCiphertext<Element>> ciphertext_inputs,
+        std::initializer_list<std::string> names = {}) {
+        auto tracer = createFunctionTracer(function_name);
+        tracer->registerInputs(ciphertext_inputs, names);
+        return tracer;
+    }
+
+    template <typename CiphertextType, typename PlaintextType>
+    std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(std::string function_name, CiphertextType ciphertext,
+                                                                PlaintextType plaintext,
+                                                                std::string ciphertext_name = "ciphertext",
+                                                                std::string plaintext_name  = "plaintext") {
+        auto tracer = createFunctionTracer(function_name);
+        tracer->registerInput(ciphertext, ciphertext_name);
+        tracer->registerInput(plaintext, plaintext_name);
+        return tracer;
+    }
+
+protected:
+    virtual std::unique_ptr<FunctionTracer<Element>> createFunctionTracer(std::string function_name) = 0;
 };
 
-/// A null function trace that does nothing when called.
+/// A null function tracer that does nothing when called.
 template <typename Element>
 class NullFunctionTracer : public FunctionTracer<Element> {
 public:
@@ -232,17 +258,8 @@ public:
     NullTracer()          = default;
     virtual ~NullTracer() = default;
 
-    virtual std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(std::string function_name) override {
-        return std::make_unique<NullFunctionTracer<Element>>();
-    }
-
-    virtual std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(
-        std::string function_name, std::initializer_list<Ciphertext<Element>> ciphertext_inputs) override {
-        return std::make_unique<NullFunctionTracer<Element>>();
-    }
-
-    virtual std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(
-        std::string function_name, std::initializer_list<ConstCiphertext<Element>> ciphertext_inputs) override {
+protected:
+    virtual std::unique_ptr<FunctionTracer<Element>> createFunctionTracer(std::string function_name) override {
         return std::make_unique<NullFunctionTracer<Element>>();
     }
 };

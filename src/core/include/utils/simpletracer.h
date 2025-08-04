@@ -324,28 +324,15 @@ public:
     explicit SimpleTracer(std::shared_ptr<std::ostream> stream) : m_stream(std::move(stream)), m_level(0) {}
     ~SimpleTracer() override = default;
 
-    std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(std::string func) override {
-        m_level += 2;
-        return std::make_unique<SimpleFunctionTracer<Element>>(func, m_stream, this, m_level);
-    }
-    std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(
-        std::string func, std::initializer_list<Ciphertext<Element>> ciphertexts) override {
-        m_level += 2;
-        auto tracer = std::make_unique<SimpleFunctionTracer<Element>>(func, m_stream, this, m_level);
-        tracer->registerInputs(ciphertexts);
-        return tracer;
-    }
-    std::unique_ptr<FunctionTracer<Element>> StartFunctionTrace(
-        std::string func, std::initializer_list<ConstCiphertext<Element>> ciphertexts) override {
-        m_level += 2;
-        auto tracer = std::make_unique<SimpleFunctionTracer<Element>>(func, m_stream, this, m_level);
-        tracer->registerInputs(ciphertexts);
-        return tracer;
-    }
-
     void EndFunction() {
         if (m_level > 0)
             m_level -= 2;
+    }
+
+protected:
+    virtual std::unique_ptr<FunctionTracer<Element>> createFunctionTracer(std::string function_name) override {
+        m_level += 2;
+        return std::make_unique<SimpleFunctionTracer<Element>>(function_name, m_stream, this, m_level);
     }
 
 private:
