@@ -52,6 +52,8 @@ BFV implementation. See https://eprint.iacr.org/2021/204 for details.
 namespace lbcrypto {
 
 void LeveledSHEBFVRNS::EvalAddInPlace(Ciphertext<DCRTPoly>& ciphertext, ConstPlaintext plaintext) const {
+    IF_TRACE(auto tracer = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::EvalAddInPlace(Ciphertext,Plaintext)", ciphertext, plaintext));
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBFVRNS>(ciphertext->GetCryptoParameters());
 
     auto pt = plaintext->GetElement<DCRTPoly>();
@@ -70,9 +72,12 @@ void LeveledSHEBFVRNS::EvalAddInPlace(Ciphertext<DCRTPoly>& ciphertext, ConstPla
     pt.SetFormat(EVALUATION);
 
     ciphertext->GetElements()[0] += pt;
+    IF_TRACE(tracer->registerOutput(ciphertext));
 }
 
 void LeveledSHEBFVRNS::EvalSubInPlace(Ciphertext<DCRTPoly>& ciphertext, ConstPlaintext plaintext) const {
+    IF_TRACE(auto tracer = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::EvalSubInPlace(Ciphertext,Plaintext)", ciphertext, plaintext));
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBFVRNS>(ciphertext->GetCryptoParameters());
 
     auto pt = plaintext->GetElement<DCRTPoly>();
@@ -91,6 +96,7 @@ void LeveledSHEBFVRNS::EvalSubInPlace(Ciphertext<DCRTPoly>& ciphertext, ConstPla
     pt.SetFormat(EVALUATION);
 
     ciphertext->GetElements()[0] -= pt;
+    IF_TRACE(tracer->registerOutput(ciphertext));
 }
 
 uint32_t FindLevelsToDrop(uint32_t multiplicativeDepth, std::shared_ptr<CryptoParametersBase<DCRTPoly>> cryptoParams,
@@ -197,6 +203,9 @@ uint32_t FindLevelsToDrop(uint32_t multiplicativeDepth, std::shared_ptr<CryptoPa
 
 Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalMult(ConstCiphertext<DCRTPoly> ciphertext1,
                                                 ConstCiphertext<DCRTPoly> ciphertext2) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::EvalMult(Ciphertext,Ciphertext)", {ciphertext1, ciphertext2},
+                 {"ciphertext1", "ciphertext2"}));
     if (!(ciphertext1->GetCryptoParameters() == ciphertext2->GetCryptoParameters())) {
         std::string errMsg = "AlgorithmSHEBFVrns::EvalMult crypto parameters are not the same";
         OPENFHE_THROW(errMsg);
@@ -359,7 +368,7 @@ Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalMult(ConstCiphertext<DCRTPoly> cipher
     for (size_t i = 0; i < cv1Size; i++) {
         for (size_t j = 0; j < cv2Size; j++) {
             if (isFirstAdd[i + j] == true) {
-                cvMult[i + j] = cv1[i] * cv2[j];
+                cvMult[i + j]     = cv1[i] * cv2[j];
                 isFirstAdd[i + j] = false;
             }
             else {
@@ -438,10 +447,12 @@ Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalMult(ConstCiphertext<DCRTPoly> cipher
 
     ciphertextMult->SetElements(std::move(cvMult));
     ciphertextMult->SetNoiseScaleDeg(std::max(ciphertext1->GetNoiseScaleDeg(), ciphertext2->GetNoiseScaleDeg()) + 1);
-    return ciphertextMult;
+    return REGISTER_IF_TRACE(ciphertextMult);
 }
 
 Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalSquare(ConstCiphertext<DCRTPoly> ciphertext) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::EvalSquare(Ciphertext)", {ciphertext}));
     Ciphertext<DCRTPoly> ciphertextSq = ciphertext->CloneEmpty();
 
     const auto cryptoParams =
@@ -629,7 +640,7 @@ Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalSquare(ConstCiphertext<DCRTPoly> ciph
                         cvSquare[i + j] = cv[i] * cv[j];
                     }
                     else {
-                        cvtemp = cv[i] * cv[j];
+                        cvtemp          = cv[i] * cv[j];
                         cvSquare[i + j] = cvtemp;
                         cvSquare[i + j] += cvtemp;
                     }
@@ -652,7 +663,7 @@ Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalSquare(ConstCiphertext<DCRTPoly> ciph
         for (size_t i = 0; i < cvSize; i++) {
             for (size_t j = 0; j < cvSize; j++) {
                 if (isFirstAdd[i + j] == true) {
-                    cvSquare[i + j] = cv[i] * cvPoverQ[j];
+                    cvSquare[i + j]   = cv[i] * cvPoverQ[j];
                     isFirstAdd[i + j] = false;
                 }
                 else {
@@ -733,45 +744,68 @@ Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalSquare(ConstCiphertext<DCRTPoly> ciph
     ciphertextSq->SetElements(std::move(cvSquare));
     ciphertextSq->SetNoiseScaleDeg(ciphertext->GetNoiseScaleDeg() + 1);
 
-    return ciphertextSq;
+    return REGISTER_IF_TRACE(ciphertextSq);
 }
 
 Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalMult(ConstCiphertext<DCRTPoly> ciphertext1,
                                                 ConstCiphertext<DCRTPoly> ciphertext2,
                                                 const EvalKey<DCRTPoly> evalKey) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::EvalMult(Ciphertext,Ciphertext,EvalKey)", {ciphertext1, ciphertext2},
+                 {"ciphertext1", "ciphertext2"}));
+    IF_TRACE(t->registerInput(evalKey, "evalKey"));
     Ciphertext<DCRTPoly> ciphertext = EvalMult(ciphertext1, ciphertext2);
     RelinearizeCore(ciphertext, evalKey);
-    return ciphertext;
+    return REGISTER_IF_TRACE(ciphertext);
 }
 
 void LeveledSHEBFVRNS::EvalMultInPlace(Ciphertext<DCRTPoly>& ciphertext1, ConstCiphertext<DCRTPoly> ciphertext2,
                                        const EvalKey<DCRTPoly> evalKey) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::EvalMultInPlace(Ciphertext,Ciphertext,EvalKey)", {ciphertext1, ciphertext2},
+                 {"ciphertext1", "ciphertext2"}));
+    IF_TRACE(t->registerInput(evalKey, "evalKey"));
     ciphertext1 = EvalMult(ciphertext1, ciphertext2);
     RelinearizeCore(ciphertext1, evalKey);
+    IF_TRACE(t->registerOutput(ciphertext1));
 }
 
 Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalSquare(ConstCiphertext<DCRTPoly> ciphertext,
                                                   const EvalKey<DCRTPoly> evalKey) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::EvalSquare(Ciphertext,EvalKey)", {ciphertext}));
+    IF_TRACE(t->registerInput(evalKey, "evalKey"));
     Ciphertext<DCRTPoly> csquare = EvalSquare(ciphertext);
     RelinearizeCore(csquare, evalKey);
-    return csquare;
+    return REGISTER_IF_TRACE(csquare);
 }
 
 void LeveledSHEBFVRNS::EvalSquareInPlace(Ciphertext<DCRTPoly>& ciphertext, const EvalKey<DCRTPoly> evalKey) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::EvalSquareInPlace(Ciphertext,EvalKey)", {ciphertext}));
+    IF_TRACE(t->registerInput(evalKey, "evalKey"));
     ciphertext = EvalSquare(ciphertext);
     RelinearizeCore(ciphertext, evalKey);
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 void LeveledSHEBFVRNS::EvalMultCoreInPlace(Ciphertext<DCRTPoly>& ciphertext, const NativeInteger& constant) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::EvalMultCoreInPlace(Ciphertext,NativeInteger)", {ciphertext}));
+    IF_TRACE(t->registerInput((void*)&constant, "constant"));
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBFVRNS>(ciphertext->GetCryptoParameters());
     for (auto& cvi : ciphertext->GetElements())
         cvi *= constant;
     ciphertext->SetNoiseScaleDeg(ciphertext->GetNoiseScaleDeg() + 1);
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalAutomorphism(ConstCiphertext<DCRTPoly> ciphertext, uint32_t i,
                                                         const std::map<uint32_t, EvalKey<DCRTPoly>>& evalKeyMap,
                                                         CALLER_INFO_ARGS_CPP) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::EvalAutomorphism(Ciphertext,uint32_t,map)", {ciphertext}));
+    IF_TRACE(t->registerInput(i, "index"));
     uint32_t N = ciphertext->GetElements()[0].GetRingDimension();
 
     std::vector<uint32_t> vec(N);
@@ -784,11 +818,13 @@ Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalAutomorphism(ConstCiphertext<DCRTPoly
     rcv[0]    = rcv[0].AutomorphismTransform(i, vec);
     rcv[1]    = rcv[1].AutomorphismTransform(i, vec);
 
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 std::shared_ptr<std::vector<DCRTPoly>> LeveledSHEBFVRNS::EvalFastRotationPrecompute(
     ConstCiphertext<DCRTPoly> ciphertext) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::EvalFastRotationPrecompute(Ciphertext)", {ciphertext}));
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBFVRNS>(ciphertext->GetCryptoParameters());
     auto algo               = ciphertext->GetCryptoContext()->GetScheme();
 
@@ -801,7 +837,10 @@ std::shared_ptr<std::vector<DCRTPoly>> LeveledSHEBFVRNS::EvalFastRotationPrecomp
     // an extra step of modulus reduction is needed
     // otherwise, run the shared implemented of EvalKeySwitchPrecomputeCore for all RNS schemes
     if (!((cryptoParams->GetMultiplicationTechnique() == HPSPOVERQLEVELED) && (sizeQ == sizeQM))) {
-        return algo->EvalKeySwitchPrecomputeCore(ciphertext->GetElements()[1], ciphertext->GetCryptoParameters());
+        auto result =
+            algo->EvalKeySwitchPrecomputeCore(ciphertext->GetElements()[1], ciphertext->GetCryptoParameters());
+        IF_TRACE(t->registerInput((void*)result.get(), "result"));
+        return result;
     }
     else {
         DCRTPoly c1     = ciphertext->GetElements()[1];
@@ -816,15 +855,21 @@ std::shared_ptr<std::vector<DCRTPoly>> LeveledSHEBFVRNS::EvalFastRotationPrecomp
                               cryptoParams->GetQlQHatInvModqDivqFrac(l), cryptoParams->GetModqBarrettMu());
         c1.SetFormat(EVALUATION);
 
-        return algo->EvalKeySwitchPrecomputeCore(c1, ciphertext->GetCryptoParameters());
+        auto result = algo->EvalKeySwitchPrecomputeCore(c1, ciphertext->GetCryptoParameters());
+        IF_TRACE(t->registerInput((void*)result.get(), "result"));
+        return result;
     }
 }
 
 Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalFastRotation(ConstCiphertext<DCRTPoly> ciphertext, const uint32_t index,
                                                         const uint32_t m,
                                                         const std::shared_ptr<std::vector<DCRTPoly>> digits) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::EvalFastRotation(Ciphertext,uint32_t,uint32_t,shared_ptr)", {ciphertext}));
+    IF_TRACE(t->registerInput(index, "index"));
+    IF_TRACE(t->registerInput(m, "m"));
     if (index == 0) {
-        return ciphertext->Clone();
+        return REGISTER_IF_TRACE(ciphertext->Clone());
     }
 
     const auto cc = ciphertext->GetCryptoContext();
@@ -888,7 +933,7 @@ Ciphertext<DCRTPoly> LeveledSHEBFVRNS::EvalFastRotation(ConstCiphertext<DCRTPoly
 
     result->SetElements({std::move((*ba)[0]), std::move((*ba)[1])});
 
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 uint32_t LeveledSHEBFVRNS::FindAutomorphismIndex(uint32_t index, uint32_t m) const {
@@ -896,6 +941,9 @@ uint32_t LeveledSHEBFVRNS::FindAutomorphismIndex(uint32_t index, uint32_t m) con
 }
 
 void LeveledSHEBFVRNS::RelinearizeCore(Ciphertext<DCRTPoly>& ciphertext, const EvalKey<DCRTPoly> evalKey) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::RelinearizeCore(Ciphertext,EvalKey)", {ciphertext}));
+    IF_TRACE(t->registerInput(evalKey, "evalKey"));
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBFVRNS>(ciphertext->GetCryptoParameters());
     // l is index corresponding to leveled parameters in cryptoParameters precomputations in HPSPOVERQLEVELED
     uint32_t l = 0;
@@ -945,9 +993,13 @@ void LeveledSHEBFVRNS::RelinearizeCore(Ciphertext<DCRTPoly>& ciphertext, const E
     }
 
     cv.resize(2);
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 Ciphertext<DCRTPoly> LeveledSHEBFVRNS::Compress(ConstCiphertext<DCRTPoly> ciphertext, size_t towersLeft) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBFVRNS::Compress(Ciphertext,size_t)", {ciphertext}));
+    IF_TRACE(t->registerInput(towersLeft, "towersLeft"));
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBFVRNS>(ciphertext->GetCryptoParameters());
 
     if ((cryptoParams->GetMultiplicationTechnique() == BEHZ) || (cryptoParams->GetMultiplicationTechnique() == HPS)) {
@@ -976,7 +1028,7 @@ Ciphertext<DCRTPoly> LeveledSHEBFVRNS::Compress(ConstCiphertext<DCRTPoly> cipher
         }
     }
 
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 // We do not need to support LeveledSHEBFVRNS::EvalMultMutable(InPlace) as no automated adjustment of ciphertexts is
