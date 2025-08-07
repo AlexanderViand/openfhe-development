@@ -234,8 +234,8 @@ endforeach()
 message("***** INSTALL IS AT ${CMAKE_INSTALL_PREFIX}; to change, run cmake with -DCMAKE_INSTALL_PREFIX=/your/path")
 set(CMAKE_INSTALL_MESSAGE LAZY)
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
 #--------------------------------------------------------------------
 # Uninstall logic
@@ -374,7 +374,7 @@ endif()
 
 ### build configure_core.h to make options available
 configure_file(./configure/config_core.in src/core/config_core.h)
-install(FILES ${CMAKE_BINARY_DIR}/src/core/config_core.h DESTINATION include/openfhe/core)
+install(FILES ${PROJECT_BINARY_DIR}/src/core/config_core.h DESTINATION include/openfhe/core)
 
 find_program(TAR "gtar")
 find_program(TAR "tar")
