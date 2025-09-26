@@ -95,3 +95,10 @@ Objects can only be used in the context they were created in
 [openfhe.h](openfhe.h)
 
 - top level for ease of import
+
+[plaintext-ser.h](plaintext-ser.h)
+
+- exposes serialization methods for plaintexts to [USCiLab - cereal](https://github.com/USCiLab/cereal)
+
+- must be included any time we need `Plaintext` serialization
+
