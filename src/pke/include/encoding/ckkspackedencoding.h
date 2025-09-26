@@ -299,6 +299,42 @@ protected:
    */
     void FitToNativeVector(const std::vector<int128_t>& vec, int128_t bigBound, NativeVector* nativeVec) const;
 #endif
+
+public:
+    /**
+     * Serialize the CKKSPackedEncoding object
+     * @param ar Archive to serialize to
+     * @param version Version of the serialization
+     */
+    template <class Archive>
+    void save(Archive& ar, std::uint32_t const version) const {
+        ar(cereal::base_class<PlaintextImpl>(this));
+        ar(cereal::make_nvp("v", value));
+        ar(cereal::make_nvp("le", m_logError));
+    }
+
+    /**
+     * Deserialize the CKKSPackedEncoding object
+     * @param ar Archive to deserialize from
+     * @param version Version of the serialization
+     */
+    template <class Archive>
+    void load(Archive& ar, std::uint32_t const version) {
+        if (version > SerializedVersion())
+            OPENFHE_THROW("serialized object version " + std::to_string(version) +
+                          " is from a later version of the library");
+        ar(cereal::base_class<PlaintextImpl>(this));
+        ar(cereal::make_nvp("v", value));
+        ar(cereal::make_nvp("le", m_logError));
+    }
+
+    /**
+     * Get the version of the serialized object for CKKSPackedEncoding
+     * @return Version number for serialization
+     */
+    static uint32_t SerializedVersion() {
+        return 1;
+    }
 };
 
 }  // namespace lbcrypto

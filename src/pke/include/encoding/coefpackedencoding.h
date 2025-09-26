@@ -91,6 +91,11 @@ protected:
     }
 
 public:
+    /**
+     * @brief Default empty constructor for serialization
+     */
+    CoefPackedEncoding() : PlaintextImpl(std::shared_ptr<Poly::Params>(0), nullptr, COEF_PACKED_ENCODING) {}
+
     template <typename T, typename std::enable_if<std::is_same<T, Poly::Params>::value ||
                                                       std::is_same<T, NativePoly::Params>::value ||
                                                       std::is_same<T, DCRTPoly::Params>::value,
@@ -151,6 +156,40 @@ public:
    */
     void SetLength(size_t siz) override {
         value.resize(siz);
+    }
+
+public:
+    /**
+     * Serialize the CoefPackedEncoding object
+     * @param ar Archive to serialize to
+     * @param version Version of the serialization
+     */
+    template <class Archive>
+    void save(Archive& ar, std::uint32_t const version) const {
+        ar(cereal::base_class<PlaintextImpl>(this));
+        ar(cereal::make_nvp("v", value));
+    }
+
+    /**
+     * Deserialize the CoefPackedEncoding object
+     * @param ar Archive to deserialize from
+     * @param version Version of the serialization
+     */
+    template <class Archive>
+    void load(Archive& ar, std::uint32_t const version) {
+        if (version > SerializedVersion())
+            OPENFHE_THROW("serialized object version " + std::to_string(version) +
+                          " is from a later version of the library");
+        ar(cereal::base_class<PlaintextImpl>(this));
+        ar(cereal::make_nvp("v", value));
+    }
+
+    /**
+     * Get the version of the serialized object for CoefPackedEncoding
+     * @return Version number for serialization
+     */
+    static uint32_t SerializedVersion() {
+        return 1;
     }
 };
 
