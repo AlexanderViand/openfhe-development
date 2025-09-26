@@ -98,6 +98,7 @@ The table below shows the current list of options, definition for the option, an
   WITH_NATIVEOPT     Use machine-specific optimizations (major speedup for clang)                                                                                                          OFF
   NATIVE_SIZE        Set default word size for native integer arithmetic to 64 or 128 bits                                                                                                 64
   CKKS_M_FACTOR      Parameter used to strengthen the CKKS adversarial model in scenarios where decryption results are shared among multiple parties (See Security.md for more details)    1
+  ENABLE_TRACER      Set to ON to enable tracer instrumentation                                                                                                                            OFF
  ================== ===================================================================================================================================================================== ==========
 
 .. note:: More Options will be added as development progresses

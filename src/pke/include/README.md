@@ -102,3 +102,6 @@ Objects can only be used in the context they were created in
 
 - must be included any time we need `Plaintext` serialization
 
+[tracing.h](tracing.h)
+
+- defines the tracing interface
