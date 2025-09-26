@@ -68,21 +68,27 @@ void CryptoContextImpl<Element>::SetKSTechniqueInScheme() {
 /////////////////////////////////////////
 template <typename Element>
 void CryptoContextImpl<Element>::EvalMultKeyGen(const PrivateKey<Element>& key) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::EvalMultKeyGen(PrivateKey)"));
+    IF_TRACE(t->registerInput(key));
     ValidateKey(key);
     if (CryptoContextImpl<Element>::s_evalMultKeyMap.find(key->GetKeyTag()) ==
         CryptoContextImpl<Element>::s_evalMultKeyMap.end()) {
         // the key is not found in the map, so the key has to be generated
-        CryptoContextImpl<Element>::s_evalMultKeyMap[key->GetKeyTag()] = {GetScheme()->EvalMultKeyGen(key)};
+        CryptoContextImpl<Element>::s_evalMultKeyMap[key->GetKeyTag()] = {
+            REGISTER_IF_TRACE(GetScheme()->EvalMultKeyGen(key))};
     }
 }
 
 template <typename Element>
 void CryptoContextImpl<Element>::EvalMultKeysGen(const PrivateKey<Element>& key) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::EvalMultKeysGen(PrivateKey)"));
+    IF_TRACE(t->registerInput(key));
     ValidateKey(key);
     if (CryptoContextImpl<Element>::s_evalMultKeyMap.find(key->GetKeyTag()) ==
         CryptoContextImpl<Element>::s_evalMultKeyMap.end()) {
         // the key is not found in the map, so the key has to be generated
-        CryptoContextImpl<Element>::s_evalMultKeyMap[key->GetKeyTag()] = GetScheme()->EvalMultKeysGen(key);
+        CryptoContextImpl<Element>::s_evalMultKeyMap[key->GetKeyTag()] =
+            REGISTER_IF_TRACE(GetScheme()->EvalMultKeysGen(key));
     }
 }
 
@@ -129,40 +135,54 @@ void CryptoContextImpl<Element>::InsertEvalMultKey(const std::vector<EvalKey<Ele
 template <typename Element>
 void CryptoContextImpl<Element>::EvalSumKeyGen(const PrivateKey<Element> privateKey,
                                                const PublicKey<Element> publicKey) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::EvalSumKeyGen(PrivateKey,PublicKey)"));
+    IF_TRACE(t->registerInput(privateKey));
+    IF_TRACE(t->registerInput(publicKey));
     ValidateKey(privateKey);
     if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag()) {
         OPENFHE_THROW("Public key passed to EvalSumKeyGen does not match private key");
     }
 
-    auto&& evalKeys = GetScheme()->EvalSumKeyGen(privateKey, publicKey);
+    auto&& evalKeys = REGISTER_IF_TRACE(GetScheme()->EvalSumKeyGen(privateKey, publicKey));
     CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
 }
 
 template <typename Element>
 std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> CryptoContextImpl<Element>::EvalSumRowsKeyGen(
     const PrivateKey<Element> privateKey, const PublicKey<Element> publicKey, uint32_t rowSize, uint32_t subringDim) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace(
+                 "CryptoContext::EvalSumRowsKeyGen(PrivateKey,PublicKey,uint32_t,uint32_t)"));
+    IF_TRACE(t->registerInput(privateKey));
+    IF_TRACE(t->registerInput(publicKey));
+    IF_TRACE(t->registerInput(rowSize));
+    IF_TRACE(t->registerInput(subringDim));
     ValidateKey(privateKey);
     if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag())
         OPENFHE_THROW("Public key passed to EvalSumKeyGen does not match private key");
 
     std::vector<uint32_t> indices;
-    auto&& evalKeys = GetScheme()->EvalSumRowsKeyGen(privateKey, rowSize, subringDim, indices);
+    auto&& evalKeys = REGISTER_IF_TRACE(GetScheme()->EvalSumRowsKeyGen(privateKey, rowSize, subringDim, indices));
     CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
 
-    return CryptoContextImpl<Element>::GetPartialEvalAutomorphismKeyMapPtr(privateKey->GetKeyTag(), indices);
+    return REGISTER_IF_TRACE(
+        CryptoContextImpl<Element>::GetPartialEvalAutomorphismKeyMapPtr(privateKey->GetKeyTag(), indices));
 }
 
 template <typename Element>
 std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> CryptoContextImpl<Element>::EvalSumColsKeyGen(
     const PrivateKey<Element> privateKey, const PublicKey<Element> publicKey) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::EvalSumColsKeyGen(PrivateKey,PublicKey)"));
+    IF_TRACE(t->registerInput(privateKey));
+    IF_TRACE(t->registerInput(publicKey));
     ValidateKey(privateKey);
     if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag())
         OPENFHE_THROW("Public key passed to EvalSumKeyGen does not match private key");
 
     std::vector<uint32_t> indices;
-    auto&& evalKeys = GetScheme()->EvalSumColsKeyGen(privateKey, indices);
+    auto&& evalKeys = REGISTER_IF_TRACE(GetScheme()->EvalSumColsKeyGen(privateKey, indices));
     CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
-    return CryptoContextImpl<Element>::GetPartialEvalAutomorphismKeyMapPtr(privateKey->GetKeyTag(), indices);
+    return REGISTER_IF_TRACE(
+        CryptoContextImpl<Element>::GetPartialEvalAutomorphismKeyMapPtr(privateKey->GetKeyTag(), indices));
 }
 
 template <typename Element>
@@ -259,12 +279,17 @@ template <typename Element>
 void CryptoContextImpl<Element>::EvalAtIndexKeyGen(const PrivateKey<Element> privateKey,
                                                    const std::vector<int32_t>& indexList,
                                                    const PublicKey<Element> publicKey) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace(
+                 "CryptoContext::EvalAtIndexKeyGen(PrivateKey,std::vector<int32_t>,PublicKey)"));
+    IF_TRACE(t->registerInput(privateKey));
+    IF_TRACE(t->registerInput(indexList));
+    IF_TRACE(if (publicKey) t->registerInput(publicKey));  // publicKey is unused
     ValidateKey(privateKey);
     if (publicKey != nullptr && privateKey->GetKeyTag() != publicKey->GetKeyTag()) {
         OPENFHE_THROW("Public key passed to EvalAtIndexKeyGen does not match private key");
     }
 
-    auto&& evalKeys = GetScheme()->EvalAtIndexKeyGen(publicKey, privateKey, indexList);
+    auto&& evalKeys = REGISTER_IF_TRACE(GetScheme()->EvalAtIndexKeyGen(publicKey, privateKey, indexList));
     CryptoContextImpl<Element>::InsertEvalAutomorphismKey(evalKeys, privateKey->GetKeyTag());
 }
 
@@ -365,8 +390,10 @@ template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalSum(ConstCiphertext<Element>& ciphertext,
                                                         uint32_t batchSize) const {
     ValidateCiphertext(ciphertext);
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::EvalSum(Ciphertext,uint32_t)", {ciphertext}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(batchSize), "batchSize"));
     auto&& evalSumKeys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ciphertext->GetKeyTag());
-    return GetScheme()->EvalSum(ciphertext, batchSize, evalSumKeys);
+    return REGISTER_IF_TRACE(GetScheme()->EvalSum(ciphertext, batchSize, evalSumKeys));
 }
 
 template <typename Element>
@@ -374,7 +401,12 @@ Ciphertext<Element> CryptoContextImpl<Element>::EvalSumRows(ConstCiphertext<Elem
                                                             const std::map<uint32_t, EvalKey<Element>>& evalSumKeys,
                                                             uint32_t subringDim) const {
     ValidateCiphertext(ciphertext);
-    return GetScheme()->EvalSumRows(ciphertext, numRows, evalSumKeys, subringDim);
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace(
+                 "CryptoContext::EvalSumRows(Ciphertext,uint32_t,map<uint32_t,EvalKey>)", {ciphertext}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(numRows), "numRows"));
+    IF_TRACE(t->registerInput(evalSumKeys, "evalSumKeys"));
+    IF_TRACE(t->registerInput(subringDim, "subringDim"));
+    return REGISTER_IF_TRACE(GetScheme()->EvalSumRows(ciphertext, numRows, evalSumKeys, subringDim));
 }
 
 template <typename Element>
@@ -382,19 +414,25 @@ Ciphertext<Element> CryptoContextImpl<Element>::EvalSumCols(
     ConstCiphertext<Element>& ciphertext, uint32_t numCols,
     const std::map<uint32_t, EvalKey<Element>>& evalSumKeysRight) const {
     ValidateCiphertext(ciphertext);
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace(
+                 "CryptoContext::EvalSumCols(Ciphertext,uint32_t,map<uint32_t,EvalKey>)", {ciphertext}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(numCols), "numCols"));
+    IF_TRACE(t->registerInput(evalSumKeysRight, "evalSumKeysRight"));
     auto&& evalSumKeys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ciphertext->GetKeyTag());
-    return GetScheme()->EvalSumCols(ciphertext, numCols, evalSumKeys, evalSumKeysRight);
+    return REGISTER_IF_TRACE(GetScheme()->EvalSumCols(ciphertext, numCols, evalSumKeys, evalSumKeysRight));
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalAtIndex(ConstCiphertext<Element>& ciphertext, int32_t index) const {
     ValidateCiphertext(ciphertext);
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::EvalAtIndex(Ciphertext,int32_t)", {ciphertext}));
+    IF_TRACE(t->registerInput(index, "index"));
     // If the index is zero, no rotation is needed, copy the ciphertext and return
     // This is done after the keyMap so that it is protected if there's not a valid key.
     if (0 == index)
-        return ciphertext->Clone();
+        return REGISTER_IF_TRACE(ciphertext->Clone());
     auto&& evalAutomorphismKeys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ciphertext->GetKeyTag());
-    return GetScheme()->EvalAtIndex(ciphertext, index, evalAutomorphismKeys);
+    return REGISTER_IF_TRACE(GetScheme()->EvalAtIndex(ciphertext, index, evalAutomorphismKeys));
 }
 
 template <typename Element>
@@ -403,8 +441,10 @@ Ciphertext<Element> CryptoContextImpl<Element>::EvalMerge(
     if (0 == ciphertextVector.size())
         OPENFHE_THROW("Input ciphertext vector is empty");
     ValidateCiphertext(ciphertextVector[0]);
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::EvalMerge(std::vector<Ciphertext>)"));
+    IF_TRACE(for (const auto& ct : ciphertextVector) t->registerInput(ct));
     auto evalAutomorphismKeys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ciphertextVector[0]->GetKeyTag());
-    return GetScheme()->EvalMerge(ciphertextVector, evalAutomorphismKeys);
+    return REGISTER_IF_TRACE(GetScheme()->EvalMerge(ciphertextVector, evalAutomorphismKeys));
 }
 
 template <typename Element>
@@ -414,9 +454,12 @@ Ciphertext<Element> CryptoContextImpl<Element>::EvalInnerProduct(ConstCiphertext
     ValidateCiphertext(ct1);
     if (ct2 == nullptr || ct1->GetKeyTag() != ct2->GetKeyTag())
         OPENFHE_THROW("Information was not generated with this crypto context");
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::EvalInnerProduct(Ciphertext,Ciphertext,uint32_t)",
+                                                   {ct1, ct2}));
+    IF_TRACE(t->registerInput(static_cast<size_t>(batchSize), "batchSize"));
     auto& evalSumKeys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ct1->GetKeyTag());
     auto& ek          = CryptoContextImpl<Element>::GetEvalMultKeyVector(ct1->GetKeyTag());
-    return GetScheme()->EvalInnerProduct(ct1, ct2, batchSize, evalSumKeys, ek[0]);
+    return REGISTER_IF_TRACE(GetScheme()->EvalInnerProduct(ct1, ct2, batchSize, evalSumKeys, ek[0]));
 }
 
 template <typename Element>
@@ -425,8 +468,12 @@ Ciphertext<Element> CryptoContextImpl<Element>::EvalInnerProduct(ConstCiphertext
     ValidateCiphertext(ct1);
     if (ct2 == nullptr)
         OPENFHE_THROW("Information was not generated with this crypto context");
+    IF_TRACE(auto t =
+                 m_tracer->StartFunctionTrace("CryptoContext::EvalInnerProduct(Ciphertext,Plaintext,uint32_t)", {ct1}));
+    IF_TRACE(t->registerInput(ct2));
+    IF_TRACE(t->registerInput(static_cast<size_t>(batchSize), "batchSize"));
     auto& evalSumKeys = CryptoContextImpl<Element>::GetEvalAutomorphismKeyMap(ct1->GetKeyTag());
-    return GetScheme()->EvalInnerProduct(ct1, ct2, batchSize, evalSumKeys);
+    return REGISTER_IF_TRACE(GetScheme()->EvalInnerProduct(ct1, ct2, batchSize, evalSumKeys));
 }
 
 template <typename Element>
@@ -441,6 +488,9 @@ Plaintext CryptoContextImpl<Element>::GetPlaintextForDecrypt(PlaintextEncodings 
 template <typename Element>
 DecryptResult CryptoContextImpl<Element>::Decrypt(ConstCiphertext<Element>& ciphertext,
                                                   const PrivateKey<Element>& privateKey, Plaintext* plaintext) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::Decrypt", {ciphertext}));
+    IF_TRACE(t->registerInput(privateKey, "privateKey"));
+
     if (ciphertext == nullptr)
         OPENFHE_THROW("ciphertext is empty");
     if (plaintext == nullptr)
@@ -486,6 +536,7 @@ DecryptResult CryptoContextImpl<Element>::Decrypt(ConstCiphertext<Element>& ciph
     }
 
     *plaintext = std::move(decrypted);
+    IF_TRACE(t->registerOutput(*plaintext, "plaintext"));
     return result;
 }
 
@@ -497,32 +548,63 @@ template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalChebyshevFunction(std::function<double(double)> func,
                                                                       ConstCiphertext<Element>& ciphertext, double a,
                                                                       double b, uint32_t degree) const {
+    IF_TRACE(
+        auto t = m_tracer->StartFunctionTrace(
+            "CryptoContext::EvalChebyshevFunction(std::function<double(double)>,Ciphertext,double,double,uint32_t)"));
+    IF_TRACE(t->registerInput(static_cast<void*>(nullptr), "func"));
+    IF_TRACE(t->registerInput(ciphertext, "ciphertext"));
+    IF_TRACE(t->registerInput(a, "a"));
+    IF_TRACE(t->registerInput(b, "b"));
+    IF_TRACE(t->registerInput(static_cast<size_t>(degree), "degree"));
     std::vector<double> coefficients = EvalChebyshevCoefficients(func, a, b, degree);
-    return EvalChebyshevSeries(ciphertext, coefficients, a, b);
+    return REGISTER_IF_TRACE(EvalChebyshevSeries(ciphertext, coefficients, a, b));
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalSin(ConstCiphertext<Element>& ciphertext, double a, double b,
                                                         uint32_t degree) const {
-    return EvalChebyshevFunction([](double x) -> double { return std::sin(x); }, ciphertext, a, b, degree);
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::EvalSin(Ciphertext,double,double,uint32_t)",
+                                                   {ciphertext}));
+    IF_TRACE(t->registerInput(a, "a"));
+    IF_TRACE(t->registerInput(b, "b"));
+    IF_TRACE(t->registerInput(static_cast<size_t>(degree), "degree"));
+    return REGISTER_IF_TRACE(
+        EvalChebyshevFunction([](double x) -> double { return std::sin(x); }, ciphertext, a, b, degree));
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalCos(ConstCiphertext<Element>& ciphertext, double a, double b,
                                                         uint32_t degree) const {
-    return EvalChebyshevFunction([](double x) -> double { return std::cos(x); }, ciphertext, a, b, degree);
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::EvalCos(Ciphertext,double,double,uint32_t)",
+                                                   {ciphertext}));
+    IF_TRACE(t->registerInput(a, "a"));
+    IF_TRACE(t->registerInput(b, "b"));
+    IF_TRACE(t->registerInput(static_cast<size_t>(degree), "degree"));
+    return REGISTER_IF_TRACE(
+        EvalChebyshevFunction([](double x) -> double { return std::cos(x); }, ciphertext, a, b, degree));
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalLogistic(ConstCiphertext<Element>& ciphertext, double a, double b,
                                                              uint32_t degree) const {
-    return EvalChebyshevFunction([](double x) -> double { return 1 / (1 + std::exp(-x)); }, ciphertext, a, b, degree);
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::EvalLogistic(Ciphertext,double,double,uint32_t)",
+                                                   {ciphertext}));
+    IF_TRACE(t->registerInput(a, "a"));
+    IF_TRACE(t->registerInput(b, "b"));
+    IF_TRACE(t->registerInput(static_cast<size_t>(degree), "degree"));
+    return REGISTER_IF_TRACE(
+        EvalChebyshevFunction([](double x) -> double { return 1 / (1 + std::exp(-x)); }, ciphertext, a, b, degree));
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::EvalDivide(ConstCiphertext<Element>& ciphertext, double a, double b,
                                                            uint32_t degree) const {
-    return EvalChebyshevFunction([](double x) -> double { return 1 / x; }, ciphertext, a, b, degree);
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::EvalDivide(Ciphertext,double,double,uint32_t)",
+                                                   {ciphertext}));
+    IF_TRACE(t->registerInput(a, "a"));
+    IF_TRACE(t->registerInput(b, "b"));
+    IF_TRACE(t->registerInput(static_cast<size_t>(degree), "degree"));
+    return REGISTER_IF_TRACE(EvalChebyshevFunction([](double x) -> double { return 1 / x; }, ciphertext, a, b, degree));
 }
 
 }  // namespace lbcrypto
@@ -547,6 +629,9 @@ Plaintext CryptoContextImpl<DCRTPoly>::GetPlaintextForDecrypt(PlaintextEncodings
 template <>
 DecryptResult CryptoContextImpl<DCRTPoly>::Decrypt(ConstCiphertext<DCRTPoly>& ciphertext,
                                                    const PrivateKey<DCRTPoly>& privateKey, Plaintext* plaintext) {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::Decrypt", {ciphertext}));
+    IF_TRACE(t->registerInput(privateKey, "privateKey"));
+
     if (ciphertext == nullptr)
         OPENFHE_THROW("ciphertext is empty");
     if (plaintext == nullptr)
@@ -592,12 +677,17 @@ DecryptResult CryptoContextImpl<DCRTPoly>::Decrypt(ConstCiphertext<DCRTPoly>& ci
     }
 
     *plaintext = std::move(decrypted);
+    IF_TRACE(t->registerOutput(*plaintext, "plaintext"));
     return result;
 }
 
 template <>
 DecryptResult CryptoContextImpl<DCRTPoly>::MultipartyDecryptFusion(
     const std::vector<Ciphertext<DCRTPoly>>& partialCiphertextVec, Plaintext* plaintext) const {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace(
+                 "CryptoContext::MultipartyDecryptFusion(std::vector<Ciphertext>,Plaintext*)"));
+    IF_TRACE(for (const auto& ct : partialCiphertextVec) t->registerInput(ct, "partialCiphertext"));
+
     DecryptResult result;
 
     // Make sure we're processing ciphertexts.
@@ -639,32 +729,45 @@ DecryptResult CryptoContextImpl<DCRTPoly>::MultipartyDecryptFusion(
     }
 
     *plaintext = std::move(decrypted);
+    IF_TRACE(t->registerOutput(*plaintext, "plaintext"));
 
     return result;
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::IntMPBootAdjustScale(ConstCiphertext<Element>& ciphertext) const {
-    return GetScheme()->IntMPBootAdjustScale(ciphertext);
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::IntMPBootAdjustScale", {ciphertext}));
+    return REGISTER_IF_TRACE(GetScheme()->IntMPBootAdjustScale(ciphertext));
 }
 
 template <typename Element>
 Ciphertext<Element> CryptoContextImpl<Element>::IntMPBootRandomElementGen(const PublicKey<Element> publicKey) const {
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::IntMPBootRandomElementGen(PublicKey)"));
+    IF_TRACE(t->registerInput(publicKey));
     const auto cryptoParamsCKKS = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(this->GetCryptoParameters());
-    return GetScheme()->IntMPBootRandomElementGen(cryptoParamsCKKS, publicKey);
+    return REGISTER_IF_TRACE(GetScheme()->IntMPBootRandomElementGen(cryptoParamsCKKS, publicKey));
 }
 
 template <typename Element>
 std::vector<Ciphertext<Element>> CryptoContextImpl<Element>::IntMPBootDecrypt(const PrivateKey<Element> privateKey,
                                                                               ConstCiphertext<Element>& ciphertext,
                                                                               ConstCiphertext<Element>& a) const {
-    return GetScheme()->IntMPBootDecrypt(privateKey, ciphertext, a);
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::IntMPBootDecrypt", {ciphertext, a}));
+    IF_TRACE(t->registerInput(privateKey));
+    return REGISTER_IF_TRACE(GetScheme()->IntMPBootDecrypt(privateKey, ciphertext, a));
 }
 
 template <typename Element>
 std::vector<Ciphertext<Element>> CryptoContextImpl<Element>::IntMPBootAdd(
     std::vector<std::vector<Ciphertext<Element>>>& sharesPairVec) const {
-    return GetScheme()->IntMPBootAdd(sharesPairVec);
+    IF_TRACE(auto t =
+                 m_tracer->StartFunctionTrace("CryptoContext::IntMPBootAdd(std::vector<std::vector<Ciphertext>>)"));
+    IF_TRACE(for (const auto& sharesPair : sharesPairVec) {
+        for (const auto& share : sharesPair) {
+            t->registerInput(share);
+        }
+    });
+    return REGISTER_IF_TRACE(GetScheme()->IntMPBootAdd(sharesPairVec));
 }
 
 template <typename Element>
@@ -672,7 +775,10 @@ Ciphertext<Element> CryptoContextImpl<Element>::IntMPBootEncrypt(const PublicKey
                                                                  const std::vector<Ciphertext<Element>>& sharesPair,
                                                                  ConstCiphertext<Element>& a,
                                                                  ConstCiphertext<Element>& ciphertext) const {
-    return GetScheme()->IntMPBootEncrypt(publicKey, sharesPair, a, ciphertext);
+    IF_TRACE(auto t = m_tracer->StartFunctionTrace("CryptoContext::IntMPBootEncrypt", {a, ciphertext}));
+    IF_TRACE(t->registerInput(publicKey));
+    IF_TRACE(for (const auto& share : sharesPair) { t->registerInput(share); });
+    return REGISTER_IF_TRACE(GetScheme()->IntMPBootEncrypt(publicKey, sharesPair, a, ciphertext));
 }
 
 // Function for sharing and recovery of secret for Threshold FHE with aborts

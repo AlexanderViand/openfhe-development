@@ -49,15 +49,20 @@ namespace lbcrypto {
 
 template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalNegate(ConstCiphertext<Element>& ciphertext) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalNegate(Ciphertext)", {ciphertext}));
     auto result = ciphertext->Clone();
     EvalNegateInPlace(result);
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 template <class Element>
 void LeveledSHEBase<Element>::EvalNegateInPlace(Ciphertext<Element>& ciphertext) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalNegateInPlace(Ciphertext)", {ciphertext}));
     for (auto& c : ciphertext->GetElements())
         c = c.Negate();
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 /////////////////////////////////////////
@@ -67,31 +72,43 @@ void LeveledSHEBase<Element>::EvalNegateInPlace(Ciphertext<Element>& ciphertext)
 template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalAdd(ConstCiphertext<Element>& ciphertext1,
                                                      ConstCiphertext<Element>& ciphertext2) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalAdd(Ciphertext,Ciphertext)", {ciphertext1, ciphertext2},
+                 {"ciphertext1", "ciphertext2"}));
     auto result = ciphertext1->Clone();
     EvalAddInPlace(result, ciphertext2);
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 template <class Element>
 void LeveledSHEBase<Element>::EvalAddInPlace(Ciphertext<Element>& ciphertext1,
                                              ConstCiphertext<Element>& ciphertext2) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalAddInPlace(Ciphertext,Ciphertext)", {ciphertext1, ciphertext2},
+                 {"ciphertext1", "ciphertext2"}));
     EvalAddCoreInPlace(ciphertext1, ciphertext2);
+    IF_TRACE(t->registerOutput(ciphertext1));
 }
 
 template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalAdd(ConstCiphertext<Element>& ciphertext,
                                                      ConstPlaintext& plaintext) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalAdd(Ciphertext,Plaintext)", ciphertext, plaintext));
     auto result = ciphertext->Clone();
     EvalAddInPlace(result, plaintext);
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 template <class Element>
 void LeveledSHEBase<Element>::EvalAddInPlace(Ciphertext<Element>& ciphertext, ConstPlaintext& plaintext) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalAddInPlace(Ciphertext,Plaintext)", ciphertext, plaintext));
     auto& cv = ciphertext->GetElements();
     auto pt  = plaintext->GetElement<Element>();
     pt.SetFormat(cv[0].GetFormat());
     cv[0] += pt;
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 /////////////////////////////////////////
@@ -101,31 +118,43 @@ void LeveledSHEBase<Element>::EvalAddInPlace(Ciphertext<Element>& ciphertext, Co
 template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalSub(ConstCiphertext<Element>& ciphertext1,
                                                      ConstCiphertext<Element>& ciphertext2) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalSub(Ciphertext,Ciphertext)", {ciphertext1, ciphertext2},
+                 {"ciphertext1", "ciphertext2"}));
     auto result = ciphertext1->Clone();
     EvalSubInPlace(result, ciphertext2);
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 template <class Element>
 void LeveledSHEBase<Element>::EvalSubInPlace(Ciphertext<Element>& ciphertext1,
                                              ConstCiphertext<Element>& ciphertext2) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalSubInPlace(Ciphertext,Ciphertext)", {ciphertext1, ciphertext2},
+                 {"ciphertext1", "ciphertext2"}));
     EvalSubCoreInPlace(ciphertext1, ciphertext2);
+    IF_TRACE(t->registerOutput(ciphertext1));
 }
 
 template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalSub(ConstCiphertext<Element>& ciphertext,
                                                      ConstPlaintext& plaintext) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalSub(Ciphertext,Plaintext)", ciphertext, plaintext));
     auto result = ciphertext->Clone();
     EvalSubInPlace(result, plaintext);
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 template <class Element>
 void LeveledSHEBase<Element>::EvalSubInPlace(Ciphertext<Element>& ciphertext, ConstPlaintext& plaintext) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalSubInPlace(Ciphertext,Plaintext)", ciphertext, plaintext));
     auto& cv = ciphertext->GetElements();
     auto pt  = plaintext->GetElement<Element>();
     pt.SetFormat(cv[0].GetFormat());
     cv[0] -= pt;
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 /////////////////////////////////////////
@@ -134,17 +163,24 @@ void LeveledSHEBase<Element>::EvalSubInPlace(Ciphertext<Element>& ciphertext, Co
 
 template <class Element>
 EvalKey<Element> LeveledSHEBase<Element>::EvalMultKeyGen(const PrivateKey<Element> privateKey) const {
+    IF_TRACE(auto t = privateKey->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalMultKeyGen(PrivateKey)"));
+    IF_TRACE(t->registerInput(privateKey, "privateKey"));
     const auto cc = privateKey->GetCryptoContext();
     const auto& s = privateKey->GetPrivateElement();
 
     auto privateKeySquared = std::make_shared<PrivateKeyImpl<Element>>(cc);
     privateKeySquared->SetPrivateElement(s * s);
 
-    return cc->GetScheme()->KeySwitchGen(privateKeySquared, privateKey);
+    auto result = cc->GetScheme()->KeySwitchGen(privateKeySquared, privateKey);
+    return REGISTER_IF_TRACE(result);
 }
 
 template <class Element>
 std::vector<EvalKey<Element>> LeveledSHEBase<Element>::EvalMultKeysGen(const PrivateKey<Element> privateKey) const {
+    IF_TRACE(auto t = privateKey->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalMultKeysGen(PrivateKey)"));
+    IF_TRACE(t->registerInput(privateKey, "privateKey"));
     const auto cc = privateKey->GetCryptoContext();
     const auto& s = privateKey->GetPrivateElement();
 
@@ -159,29 +195,37 @@ std::vector<EvalKey<Element>> LeveledSHEBase<Element>::EvalMultKeysGen(const Pri
         evalKeyVec.emplace_back(cc->GetScheme()->KeySwitchGen(privateKeyPower, privateKey));
     }
 
-    return evalKeyVec;
+    return REGISTER_IF_TRACE(evalKeyVec);
 }
 
 template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalMult(ConstCiphertext<Element>& ciphertext,
                                                       ConstPlaintext& plaintext) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalMult(Ciphertext,Plaintext)", ciphertext, plaintext));
     auto result = ciphertext->Clone();
     EvalMultInPlace(result, plaintext);
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 template <class Element>
 void LeveledSHEBase<Element>::EvalMultInPlace(Ciphertext<Element>& ciphertext, ConstPlaintext& plaintext) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalMultInPlace(Ciphertext,Plaintext)", ciphertext, plaintext));
     auto pt = plaintext->GetElement<Element>();
     pt.SetFormat(Format::EVALUATION);
     for (auto& c : ciphertext->GetElements())
         c *= pt;
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalMult(ConstCiphertext<Element>& ciphertext1,
                                                       ConstCiphertext<Element>& ciphertext2,
                                                       const EvalKey<Element> evalKey) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalMult(Ciphertext,Ciphertext,EvalKey)", {ciphertext1, ciphertext2},
+                 {"ciphertext1", "ciphertext2"}));
     auto ciphertext = EvalMult(ciphertext1, ciphertext2);
 
     auto& cv = ciphertext->GetElements();
@@ -195,12 +239,15 @@ Ciphertext<Element> LeveledSHEBase<Element>::EvalMult(ConstCiphertext<Element>& 
 
     cv.resize(2);
 
-    return ciphertext;
+    return REGISTER_IF_TRACE(ciphertext);
 }
 
 template <class Element>
 void LeveledSHEBase<Element>::EvalMultInPlace(Ciphertext<Element>& ciphertext1, ConstCiphertext<Element>& ciphertext2,
                                               const EvalKey<Element> evalKey) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalMultInPlace(Ciphertext,Ciphertext,EvalKey)", {ciphertext1, ciphertext2},
+                 {"ciphertext1", "ciphertext2"}));
     ciphertext1 = EvalMult(ciphertext1, ciphertext2);
 
     auto& cv = ciphertext1->GetElements();
@@ -213,6 +260,7 @@ void LeveledSHEBase<Element>::EvalMultInPlace(Ciphertext<Element>& ciphertext1, 
     cv[1] += (*ab)[1];
 
     cv.resize(2);
+    IF_TRACE(t->registerOutput(ciphertext1));
 }
 
 template <class Element>
@@ -238,6 +286,8 @@ Ciphertext<Element> LeveledSHEBase<Element>::EvalMultMutable(Ciphertext<Element>
 template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalSquare(ConstCiphertext<Element>& ciphertext,
                                                         const EvalKey<Element> evalKey) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalSquare(Ciphertext,EvalKey)", {ciphertext}));
     auto csquare = EvalSquare(ciphertext);
 
     auto& cv = csquare->GetElements();
@@ -251,11 +301,13 @@ Ciphertext<Element> LeveledSHEBase<Element>::EvalSquare(ConstCiphertext<Element>
 
     cv.resize(2);
 
-    return csquare;
+    return REGISTER_IF_TRACE(csquare);
 }
 
 template <class Element>
 void LeveledSHEBase<Element>::EvalSquareInPlace(Ciphertext<Element>& ciphertext, const EvalKey<Element> evalKey) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalSquareInPlace(Ciphertext,EvalKey)", {ciphertext}));
     ciphertext = EvalSquare(ciphertext);
 
     auto& cv = ciphertext->GetElements();
@@ -268,6 +320,7 @@ void LeveledSHEBase<Element>::EvalSquareInPlace(Ciphertext<Element>& ciphertext,
     cv[1] += (*ab)[1];
 
     cv.resize(2);
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 template <class Element>
@@ -318,14 +371,18 @@ Ciphertext<Element> LeveledSHEBase<Element>::EvalMultAndRelinearize(
 template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::Relinearize(ConstCiphertext<Element>& ciphertext,
                                                          const std::vector<EvalKey<Element>>& evalKeyVec) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::Relinearize(Ciphertext,std::vector<EvalKey>)", {ciphertext}));
     auto result = ciphertext->Clone();
     RelinearizeInPlace(result, evalKeyVec);
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 template <class Element>
 void LeveledSHEBase<Element>::RelinearizeInPlace(Ciphertext<Element>& ciphertext,
                                                  const std::vector<EvalKey<Element>>& evalKeyVec) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::RelinearizeInPlace(Ciphertext,std::vector<EvalKey>)", {ciphertext}));
     auto& cv = ciphertext->GetElements();
     for (auto& c : cv)
         c.SetFormat(Format::EVALUATION);
@@ -338,6 +395,7 @@ void LeveledSHEBase<Element>::RelinearizeInPlace(Ciphertext<Element>& ciphertext
         cv[1] += (*ab)[1];
     }
     cv.resize(2);
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 /////////////////////////////////////////
@@ -389,6 +447,10 @@ template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalAutomorphism(ConstCiphertext<Element>& ciphertext, uint32_t i,
                                                               const std::map<uint32_t, EvalKey<Element>>& evalKeyMap,
                                                               CALLER_INFO_ARGS_CPP) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalAutomorphism(Ciphertext,uint32_t,std::map<uint32_t,EvalKey>)", {ciphertext}));
+    IF_TRACE(t->registerInput(i, "i"));
+    IF_TRACE(t->registerInput(evalKeyMap, "evalKeys"));
     // this operation can be performed on 2-element ciphertexts only
     if (ciphertext->NumberCiphertextElements() != 2)
         OPENFHE_THROW("Ciphertext should be relinearized before.");
@@ -425,7 +487,7 @@ Ciphertext<Element> LeveledSHEBase<Element>::EvalAutomorphism(ConstCiphertext<El
     auto& rcv = result->GetElements();
     rcv[0]    = rcv[0].AutomorphismTransform(i, vec);
     rcv[1]    = rcv[1].AutomorphismTransform(i, vec);
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 template <class Element>
@@ -473,11 +535,17 @@ template <class Element>
 std::shared_ptr<std::map<uint32_t, EvalKey<Element>>> LeveledSHEBase<Element>::EvalAtIndexKeyGen(
     const PublicKey<Element> publicKey, const PrivateKey<Element> privateKey,
     const std::vector<int32_t>& indexList) const {
+    IF_TRACE(auto t = privateKey->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalAtIndexKeyGen(PublicKey,PrivateKey,std::vector<int32_t>)"));
+    IF_TRACE(t->registerInput(publicKey, "publicKey"));
+    IF_TRACE(t->registerInput(privateKey, "privateKey"));
+    IF_TRACE(t->registerInput(indexList, "indexList"));
     uint32_t M = privateKey->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder();
     std::vector<uint32_t> autoIndices(indexList.size());
     for (size_t i = 0; i < indexList.size(); i++)
         autoIndices[i] = FindAutomorphismIndex(indexList[i], M);
-    return EvalAutomorphismKeyGen(privateKey, autoIndices);
+    auto result = EvalAutomorphismKeyGen(privateKey, autoIndices);
+    return REGISTER_IF_TRACE(result);
 }
 
 template <class Element>
@@ -495,10 +563,13 @@ template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::ComposedEvalMult(ConstCiphertext<Element>& ciphertext1,
                                                               ConstCiphertext<Element>& ciphertext2,
                                                               const EvalKey<Element> evalKey) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::ComposedEvalMult(Ciphertext,Ciphertext,EvalKey)", {ciphertext1, ciphertext2},
+                 {"ciphertext1", "ciphertext2"}));
     auto ciphertext = EvalMult(ciphertext1, ciphertext2);
     ciphertext->GetCryptoContext()->GetScheme()->KeySwitchInPlace(ciphertext, evalKey);
     ModReduceInPlace(ciphertext, BASE_NUM_LEVELS_TO_DROP);
-    return ciphertext;
+    return REGISTER_IF_TRACE(ciphertext);
 }
 
 /////////////////////////////////////////
@@ -569,6 +640,9 @@ Ciphertext<Element> LeveledSHEBase<Element>::EvalAddCore(ConstCiphertext<Element
 template <class Element>
 void LeveledSHEBase<Element>::EvalAddCoreInPlace(Ciphertext<Element>& ciphertext1,
                                                  ConstCiphertext<Element>& ciphertext2) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalAddCoreInPlace(Ciphertext,Ciphertext)", {ciphertext1, ciphertext2}));
+
     VerifyNumOfTowers(ciphertext1, ciphertext2);
     auto& cv1 = ciphertext1->GetElements();
     auto& cv2 = ciphertext2->GetElements();
@@ -581,8 +655,14 @@ void LeveledSHEBase<Element>::EvalAddCoreInPlace(Ciphertext<Element>& ciphertext
     uint32_t i = 0;
     for (; i < cSmallSize; ++i)
         cv1[i] += cv2[i];
-    for (; i < c2Size; ++i)
-        cv1.emplace_back(cv2[i]);
+
+    if (c1Size < c2Size) {
+        cv1.reserve(c2Size);
+        for (size_t i = c1Size; i < c2Size; i++) {
+            cv1.emplace_back(cv2[i]);
+        }
+    }
+    IF_TRACE(t->registerOutput(ciphertext1));
 }
 
 template <class Element>
@@ -596,6 +676,9 @@ Ciphertext<Element> LeveledSHEBase<Element>::EvalSubCore(ConstCiphertext<Element
 template <class Element>
 void LeveledSHEBase<Element>::EvalSubCoreInPlace(Ciphertext<Element>& ciphertext1,
                                                  ConstCiphertext<Element>& ciphertext2) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalSubCoreInPlace(Ciphertext,Ciphertext)", {ciphertext1, ciphertext2}));
+
     VerifyNumOfTowers(ciphertext1, ciphertext2);
     auto& cv1 = ciphertext1->GetElements();
     auto& cv2 = ciphertext2->GetElements();
@@ -608,13 +691,22 @@ void LeveledSHEBase<Element>::EvalSubCoreInPlace(Ciphertext<Element>& ciphertext
     uint32_t i = 0;
     for (; i < cSmallSize; ++i)
         cv1[i] -= cv2[i];
-    for (; i < c2Size; ++i)
-        cv1.emplace_back(cv2[i].Negate());
+
+    if (c1Size < c2Size) {
+        cv1.reserve(c2Size);
+        for (size_t i = c1Size; i < c2Size; i++) {
+            cv1.emplace_back(cv2[i].Negate());
+        }
+    }
+    IF_TRACE(t->registerOutput(ciphertext1));
 }
 
 template <class Element>
 Ciphertext<Element> LeveledSHEBase<Element>::EvalMultCore(ConstCiphertext<Element>& ctxt1,
                                                           ConstCiphertext<Element>& ctxt2) const {
+    IF_TRACE(auto t = ctxt1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBase::EvalMultCore(Ciphertext,Ciphertext)", {ctxt1, ctxt2}));
+
     VerifyNumOfTowers(ctxt1, ctxt2);
     auto& cv1 = ctxt1->GetElements();
     auto& cv2 = ctxt2->GetElements();
@@ -652,7 +744,7 @@ Ciphertext<Element> LeveledSHEBase<Element>::EvalMultCore(ConstCiphertext<Elemen
     result->SetScalingFactor(ctxt1->GetScalingFactor() * ctxt2->GetScalingFactor());
     result->SetScalingFactorInt(ctxt1->GetScalingFactorInt().ModMul(
         ctxt2->GetScalingFactorInt(), ctxt1->GetCryptoParameters()->GetPlaintextModulus()));
-    return result;
+    return REGISTER_IF_TRACE(result);
 }
 
 template <class Element>

@@ -38,10 +38,16 @@ BGV implementation. See https://eprint.iacr.org/2021/204 for details.
 #include "ciphertext.h"
 #include "scheme/bgvrns/bgvrns-cryptoparameters.h"
 #include "scheme/bgvrns/bgvrns-leveledshe.h"
+#include "tracing.h"
+#include "cryptocontext.h"
 
 namespace lbcrypto {
 
 void LeveledSHEBGVRNS::ModReduceInternalInPlace(Ciphertext<DCRTPoly>& ciphertext, size_t levels) const {
+    IF_TRACE(auto tracer = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBGVRNS::ModReduceInternalInPlace(Ciphertext,size_t)", {ciphertext}));
+    IF_TRACE(tracer->registerInput(levels, "levels"));
+
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBGVRNS>(ciphertext->GetCryptoParameters());
 
     const auto t = ciphertext->GetCryptoParameters()->GetPlaintextModulus();
@@ -72,16 +78,28 @@ void LeveledSHEBGVRNS::ModReduceInternalInPlace(Ciphertext<DCRTPoly>& ciphertext
             ciphertext->SetScalingFactorInt(ciphertext->GetScalingFactorInt().ModMul(modReduceFactorInv, t));
         }
     }
+
+    IF_TRACE(tracer->registerOutput(ciphertext));
 }
 
 void LeveledSHEBGVRNS::LevelReduceInternalInPlace(Ciphertext<DCRTPoly>& ciphertext, size_t levels) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBGVRNS::LevelReduceInternalInPlace(Ciphertext,size_t)", {ciphertext}));
+    IF_TRACE(t->registerInput(levels, "levels"));
+
     for (auto& e : ciphertext->GetElements())
         e.DropLastElements(levels);
     ciphertext->SetLevel(ciphertext->GetLevel() + levels);
+
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 void LeveledSHEBGVRNS::AdjustLevelsAndDepthInPlace(Ciphertext<DCRTPoly>& ciphertext1,
                                                    Ciphertext<DCRTPoly>& ciphertext2) const {
+    IF_TRACE(auto tracer = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBGVRNS::AdjustLevelsAndDepthInPlace(Ciphertext,Ciphertext)", {ciphertext1, ciphertext2},
+                 {"ciphertext1", "ciphertext2"}));
+
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBGVRNS>(ciphertext1->GetCryptoParameters());
 
     const NativeInteger t(cryptoParams->GetPlaintextModulus());
@@ -221,18 +239,32 @@ void LeveledSHEBGVRNS::AdjustLevelsAndDepthInPlace(Ciphertext<DCRTPoly>& ciphert
             EvalMultCoreInPlace(ciphertext2, scf.ConvertToInt());
         }
     }
+
+    IF_TRACE(tracer->registerOutput(ciphertext1, "ciphertext1"));
+    IF_TRACE(tracer->registerOutput(ciphertext2, "ciphertext2"));
 }
 
 void LeveledSHEBGVRNS::AdjustLevelsAndDepthToOneInPlace(Ciphertext<DCRTPoly>& ciphertext1,
                                                         Ciphertext<DCRTPoly>& ciphertext2) const {
+    IF_TRACE(auto t = ciphertext1->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBGVRNS::AdjustLevelsAndDepthToOneInPlace(Ciphertext,Ciphertext)",
+                 {ciphertext1, ciphertext2}, {"ciphertext1", "ciphertext2"}));
+
     AdjustLevelsAndDepthInPlace(ciphertext1, ciphertext2);
     if (ciphertext1->GetNoiseScaleDeg() == 2) {
         ModReduceInternalInPlace(ciphertext1, BASE_NUM_LEVELS_TO_DROP);
         ModReduceInternalInPlace(ciphertext2, BASE_NUM_LEVELS_TO_DROP);
     }
+
+    IF_TRACE(t->registerOutput(ciphertext1, "ciphertext1"));
+    IF_TRACE(t->registerOutput(ciphertext2, "ciphertext2"));
 }
 
 void LeveledSHEBGVRNS::EvalMultCoreInPlace(Ciphertext<DCRTPoly>& ciphertext, NativeInteger scalar) const {
+    IF_TRACE(auto tracer = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBGVRNS::EvalMultCoreInPlace(Ciphertext,NativeInteger)", {ciphertext}));
+    IF_TRACE(tracer->registerInput(scalar, "scalar"));
+
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBGVRNS>(ciphertext->GetCryptoParameters());
 
     auto& cv = ciphertext->GetElements();
@@ -244,9 +276,14 @@ void LeveledSHEBGVRNS::EvalMultCoreInPlace(Ciphertext<DCRTPoly>& ciphertext, Nat
     if (cryptoParams->GetScalingTechnique() == FLEXIBLEAUTO || cryptoParams->GetScalingTechnique() == FLEXIBLEAUTOEXT) {
         ciphertext->SetScalingFactorInt(ciphertext->GetScalingFactorInt().ModMul(scalar, t));
     }
+
+    IF_TRACE(tracer->registerOutput(ciphertext));
 }
 
 void LeveledSHEBGVRNS::EvalMultInPlace(Ciphertext<DCRTPoly>& ciphertext, ConstPlaintext& plaintext) const {
+    IF_TRACE(auto t = ciphertext->GetCryptoContext()->getTracer()->StartFunctionTrace(
+                 "LeveledSHEBGVRNS::EvalMultInPlace(Ciphertext,Plaintext)", ciphertext, plaintext));
+
     LeveledSHERNS::EvalMultInPlace(ciphertext, plaintext);
     const auto cryptoParams = std::dynamic_pointer_cast<CryptoParametersBGVRNS>(ciphertext->GetCryptoParameters());
     if (cryptoParams->GetScalingTechnique() == FLEXIBLEAUTO || cryptoParams->GetScalingTechnique() == FLEXIBLEAUTOEXT) {
@@ -254,6 +291,8 @@ void LeveledSHEBGVRNS::EvalMultInPlace(Ciphertext<DCRTPoly>& ciphertext, ConstPl
         ciphertext->SetScalingFactorInt(
             ciphertext->GetScalingFactorInt().ModMul(ciphertext->GetScalingFactorInt(), plainMod));
     }
+
+    IF_TRACE(t->registerOutput(ciphertext));
 }
 
 uint32_t LeveledSHEBGVRNS::FindAutomorphismIndex(uint32_t index, uint32_t m) const {
