@@ -227,10 +227,24 @@ public:
         const CryptoContextImpl<DCRTPoly>& cc, const std::vector<std::vector<std::complex<double>>>& A,
         double scale = 1., uint32_t L = 0) const;
 
+    std::vector<ReadOnlyPlaintext> EvalLinearTransformPrecomputeSparse(
+        const CryptoContextImpl<DCRTPoly>& cc,
+        const std::vector<std::vector<std::complex<double>>>& diagonals,
+        const std::vector<int32_t>& diagonalIndices, uint32_t dim1,
+        double scale = 1., uint32_t L = 0) const;
+
     std::vector<ReadOnlyPlaintext> EvalLinearTransformPrecompute(
         const CryptoContextImpl<DCRTPoly>& cc, const std::vector<std::vector<std::complex<double>>>& A,
         const std::vector<std::vector<std::complex<double>>>& B, uint32_t orientation = 0, double scale = 1,
         uint32_t L = 0) const;
+
+    // Narrow public wrapper for HEIR's generated linear-transform code.
+    Plaintext MakeAuxPlaintextForLinearTransform(
+        const CryptoContextImpl<DCRTPoly>& cc, const std::shared_ptr<ParmType> params,
+        const std::vector<std::complex<double>>& value, size_t noiseScaleDeg, uint32_t level,
+        uint32_t slots) const {
+        return MakeAuxPlaintext(cc, params, value, noiseScaleDeg, level, slots);
+    }
 
     std::vector<std::vector<ReadOnlyPlaintext>> EvalCoeffsToSlotsPrecompute(const CryptoContextImpl<DCRTPoly>& cc,
                                                                             const std::vector<std::complex<double>>& A,
@@ -250,6 +264,11 @@ public:
 
     Ciphertext<DCRTPoly> EvalLinearTransform(const std::vector<ReadOnlyPlaintext>& A,
                                              ConstCiphertext<DCRTPoly>& ct) const;
+
+    Ciphertext<DCRTPoly> EvalLinearTransformSparse(
+        const std::vector<ReadOnlyPlaintext>& A,
+        ConstCiphertext<DCRTPoly>& ct,
+        const std::vector<int32_t>& diagonalIndices, uint32_t dim1) const;
 
     Ciphertext<DCRTPoly> EvalCoeffsToSlots(const std::vector<std::vector<ReadOnlyPlaintext>>& A,
                                            ConstCiphertext<DCRTPoly>& ctxt) const;
@@ -280,6 +299,11 @@ public:
                                       SecretKeyDist secretKeyDist);
 
     static uint32_t GetBootstrapDepth(const std::vector<uint32_t>& levelBudget, SecretKeyDist secretKeyDist);
+
+    template <typename VectorDataType>
+    static uint32_t GetFBTDepth(const std::vector<uint32_t>& levelBudget,
+                                const std::vector<VectorDataType>& coefficients, const BigInteger& PInput, size_t order,
+                                SecretKeyDist skd);
 
     template <typename VectorDataType>
     static uint32_t AdjustDepthFBT(const std::vector<VectorDataType>& coefficients, const BigInteger& PInput,
